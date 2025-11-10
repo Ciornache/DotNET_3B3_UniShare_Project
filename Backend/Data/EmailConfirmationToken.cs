@@ -13,7 +13,7 @@ public class EmailConfirmationToken
     public Guid UserId { get; set; }
     
     [Required]
-    [MaxLength(10)]
+    [MaxLength(64)]
     public string Code { get; set; } = string.Empty;
     
     [Required]
@@ -27,4 +27,3 @@ public class EmailConfirmationToken
     // Navigation property
     public User? User { get; set; }
 }
-

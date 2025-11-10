@@ -1,84 +1,118 @@
-﻿UniShare Backend
-===============
+﻿# UniShare Backend
 
-This README explains how to run the UniShare Backend, how to run the database (PostgreSQL), which packages the project depends on, and the common commands to prepare and start the application on Windows (cmd.exe).
+ASP.NET Core Web API for the UniShare platform.
 
-Project overview
-----------------
-- Project: Backend (ASP.NET Core Web API targeting .NET 9)
-- DbContext: `Backend.Persistence.ApplicationContext`
-- Database provider: PostgreSQL (Npgsql)
-- Swagger is configured for API exploration in development
+## Prerequisites
 
-Required NuGet packages (from `Backend.csproj`)
-----------------------------------------------
-The project currently references the following relevant packages:
-- Aspire.Hosting.PostgreSQL (v9.5.2)
-- Microsoft.AspNetCore.OpenApi (v9.0.9)
-- Microsoft.EntityFrameworkCore (v9.0.10)
-- Microsoft.EntityFrameworkCore.Tools (v9.0.10) - development toolset
-- Npgsql.EntityFrameworkCore.PostgreSQL (v9.0.4)
-- Swashbuckle.AspNetCore (v9.0.6)
+- .NET 9.0 SDK
+- PostgreSQL database
+- Gmail account with 2-Step Verification enabled (for email functionality)
 
-These packages are declared in `Backend.csproj` and will be restored automatically by `dotnet restore`.
+## Setup
 
-Configuration (connection string)
----------------------------------
-The default connection string is in `appsettings.json`:
+### 1. Database Configuration
 
-Host=localhost;Database=UniShare;Username=postgres;Password=admin
+Update the connection string in `appsettings.json` if needed:
 
-You can either use this default (if you run PostgreSQL with these credentials) or update the connection string in `appsettings.json` or provide a different configuration for your environment (for example via environment variables or user secrets).
-
-Run PostgreSQL (two options)
-----------------------------
-
-Install PostgreSQL (for example from https://www.postgresql.org/download/), then create a database and user that match your connection string or update `appsettings.json` accordingly from pgAdmin.
-
-Applying EF Core migrations (create or update database schema)
--------------------------------------------------------------
-The repository contains migrations under the `Migrations/` folder.
-
-1) Install dotnet-ef (if not already installed):
-
-```cmd
-dotnet tool install --global dotnet-ef
+```json
+"ConnectionStrings": {
+  "DefaultConnection": "Host=localhost;Database=UniShare;Username=postgres;Password=admin"
+}
 ```
 
-2) From the `Backend` project directory, restore packages and apply migrations:
+### 2. Run Database Migrations
 
-```cmd
-cd "Project\Backend"
-dotnet restore
+```bash
 dotnet ef database update
 ```
 
-This will run the migrations and create/update the database schema in the PostgreSQL instance defined by your connection string.
+### 3. SMTP Configuration
 
-If you add new migrations during development:
+The application uses Gmail SMTP for sending emails. Configure the SMTP settings in `appsettings.json`:
 
-```cmd
-dotnet ef migrations add InitialCreate
-dotnet ef database update
+```json
+"Smtp": {
+  "Host": "smtp.gmail.com",
+  "Port": "587",
+  "UseSsl": true,
+  "Username": "your-email@gmail.com",
+  "Password": "",
+  "From": "your-email@gmail.com"
+}
 ```
 
-Notes and troubleshooting
-------------------------
-- If the database update fails with a connection error, verify PostgreSQL is running and the connection string matches the server host/port and credentials.
-- If using Docker on Windows and port 5432 is already taken, change the host port mapping (for example `-p 5433:5432`) and update your connection string Host=localhost;Port=5433;...
-- If you see EF or runtime errors related to your `ApplicationContext` or model classes, ensure your code compiles (`dotnet build`) and that migrations are up-to-date.
+**Important:** Do NOT store your password in `appsettings.json`. Use dotnet user-secrets instead (see below).
 
-Useful commands summary
------------------------
-- Restore packages: `dotnet restore`
-- Build project: `dotnet build`
-- Run app: `dotnet run`
-- Apply migrations: `dotnet ef database update`
-- Add migration: `dotnet ef migrations add YourName`
+### 4. Generate Gmail App Password
 
-Where to look next
-------------------
-- `appsettings.json` — current connection string
-- `Persistence/ApplicationContext.cs` — EF DbContext and DbSet definitions
-- `Migrations/` — existing EF Core migrations
+1. Go to [Google Account Security](https://myaccount.google.com/security)
+2. Enable **2-Step Verification** (required)
+3. Go to [App passwords](https://myaccount.google.com/apppasswords)
+4. Select app and device (or choose "Other" to name it)
+5. Click **Generate**
+6. Copy the 16-character password (displayed as four groups of four characters)
 
+### 5. Configure User Secrets (Recommended)
+
+Store sensitive data like the Gmail app password using dotnet user-secrets:
+
+```bash
+# Initialize user secrets for the project
+dotnet user-secrets init
+
+# Set the SMTP password (replace with your 16-character app password)
+dotnet user-secrets set "Smtp:Password" "abcdabcdabcdabcd"
+
+# Set the SMTP username if different
+dotnet user-secrets set "Smtp:Username" "your-email@gmail.com"
+
+# Verify secrets are set
+dotnet user-secrets list
+
+# (Optional) Remove a secret
+dotnet user-secrets remove "Smtp:Password"
+
+# (Optional) Clear all secrets
+dotnet user-secrets clear
+```
+
+User secrets are stored locally on your machine and are automatically loaded in the `Development` environment. They will not be committed to source control.
+
+### 6. JWT Configuration
+
+The JWT settings are already configured in `appsettings.json`. For production, consider moving the `Key` to user secrets or environment variables:
+
+```bash
+dotnet user-secrets set "JwtSettings:Key" "your-secure-key-here"
+```
+
+## Running the Application
+
+```bash
+dotnet run
+```
+
+The API will be available at `https://localhost:5001` (or the port specified in `launchSettings.json`).
+
+## Development
+
+### Project Structure
+
+- **Data/** - Entity models
+- **Features/** - Feature-based organization (handlers and requests)
+- **Migrations/** - EF Core database migrations
+- **Persistence/** - Database context
+- **Services/** - Application services (hashing, email, tokens)
+- **Validators/** - Input validation
+
+### Testing API Endpoints
+
+Use the `Backend.http` file with JetBrains Rider or VS Code REST Client extension for quick API testing.
+
+## Security Notes
+
+- Never commit secrets to source control
+- Use user secrets for local development
+- Use environment variables or Azure Key Vault for production
+- Rotate JWT keys and app passwords regularly
+- Revoke app passwords if compromised
