@@ -1,6 +1,6 @@
 @Backend_HostAddress = http://localhost:5083
 
-GET {{Backend_HostAddress}}/weatherforecast/
+GET {{Backend_HostAddress}}/unishare/
 Accept: application/json
 
 ###
