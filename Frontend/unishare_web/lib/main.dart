@@ -20,6 +20,7 @@ class UniShareApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'UniShare',
       theme: ThemeData(
         primarySwatch: Colors.blue,

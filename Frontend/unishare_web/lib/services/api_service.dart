@@ -3,7 +3,21 @@ import 'package:http/http.dart' as http;
 
 class ApiService {
   static const String baseUrl = 'http://localhost:5083';
+  static Future<List<Map<String, dynamic>>> getItems() async {
+    final url = Uri.parse('$baseUrl/items');
+    final response = await http.get(url, headers: {'Content-Type': 'application/json'});
 
+    print('API get-items status: ${response.statusCode}');
+    print('API get-items body: ${response.body}');
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data is List) {
+        return List<Map<String, dynamic>>.from(data);
+      }
+    }
+    return [];
+  }
   //confirm email
   // ----------------- Confirm Email -----------------
   static Future<bool> confirmEmail(String email, String code) async {

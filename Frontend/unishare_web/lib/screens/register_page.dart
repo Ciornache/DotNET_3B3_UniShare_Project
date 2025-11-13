@@ -24,7 +24,7 @@ class _RegisterPageState extends State<RegisterPage> {
   void initState() {
     super.initState();
 
-    // ---------------- LISTENERI PENTRU ȘTERGEREA ERORILOR ----------------
+    // ---------------- LISTENERS FOR CLEARING ERRORS ----------------
     _emailCtrl.addListener(() => _clearFieldError('email'));
     _userNameCtrl.addListener(() => _clearFieldError('userName'));
   }
@@ -33,9 +33,9 @@ class _RegisterPageState extends State<RegisterPage> {
     final auth = context.read<AuthProvider>();
     if (auth.fieldErrors.containsKey(field)) {
       auth.fieldErrors.remove(field);
-      // Forțează revalidarea form-ului ca să dispară mesajul sub câmp
+      // Force form revalidation to clear the error message
       if (_formKey.currentState != null) _formKey.currentState!.validate();
-      // Notify widget să se re-renderizeze
+      // Notify widget to re-render
       setState(() {});
     }
   }
@@ -54,7 +54,7 @@ class _RegisterPageState extends State<RegisterPage> {
     );
     setState(() => _loading = false);
 
-    _formKey.currentState!.validate(); // revalidate pentru a arăta erorile
+    _formKey.currentState!.validate(); // revalidate to show backend errors
 
     if (!mounted) return;
 
@@ -63,7 +63,7 @@ class _RegisterPageState extends State<RegisterPage> {
         const SnackBar(content: Text('Registration successful! Check your email for verification code.')),
       );
 
-      // Navigăm către VerifyEmailPage
+      // Navigate to VerifyEmailPage
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -81,72 +81,160 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
+    final double maxFormWidth = 450.0; // Slightly wider for more fields
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Register')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            children: [
-              TextFormField(
-                controller: _firstNameCtrl,
-                decoration: const InputDecoration(labelText: 'First Name'),
-                validator: (v) => v!.isEmpty ? 'Enter your first name' : null,
+      // Removed AppBar for a cleaner look, kept title here for context
+      // If you prefer the AppBar, uncomment:
+      // appBar: AppBar(title: const Text('Register')),
+
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: maxFormWidth,
+            ),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // 1. Prominent Title
+                  const Text(
+                    'Create Your Account',
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.deepPurple,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 30),
+
+                  // 2. First Name
+                  TextFormField(
+                    controller: _firstNameCtrl,
+                    decoration: InputDecoration(
+                      labelText: 'First Name',
+                      prefixIcon: const Icon(Icons.person_outline),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    validator: (v) => v!.isEmpty ? 'Enter your first name' : null,
+                  ),
+                  const SizedBox(height: 15),
+
+                  // 3. Last Name
+                  TextFormField(
+                    controller: _lastNameCtrl,
+                    decoration: InputDecoration(
+                      labelText: 'Last Name',
+                      prefixIcon: const Icon(Icons.person_outline),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    validator: (v) => v!.isEmpty ? 'Enter your last name' : null,
+                  ),
+                  const SizedBox(height: 15),
+
+                  // 4. Email
+                  TextFormField(
+                    controller: _emailCtrl,
+                    decoration: InputDecoration(
+                      labelText: 'Email',
+                      prefixIcon: const Icon(Icons.email_outlined),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    validator: (v) {
+                      if (!v!.contains('@')) return 'Enter a valid email';
+                      if (auth.fieldErrors.containsKey('email')) return auth.fieldErrors['email'];
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 15),
+
+                  // 5. Username
+                  TextFormField(
+                    controller: _userNameCtrl,
+                    decoration: InputDecoration(
+                      labelText: 'Username',
+                      prefixIcon: const Icon(Icons.alternate_email),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    validator: (v) {
+                      if (v!.isEmpty) return 'Enter a username';
+                      if (auth.fieldErrors.containsKey('userName')) return auth.fieldErrors['userName'];
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 15),
+
+                  // 6. Password
+                  TextFormField(
+                    controller: _passwordCtrl,
+                    decoration: InputDecoration(
+                      labelText: 'Password',
+                      prefixIcon: const Icon(Icons.lock_outline),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    obscureText: true,
+                    validator: (v) {
+                      if (v == null || v.isEmpty) return 'Enter a password';
+                      if (v.length < 6) return 'Minimum 6 characters';
+                      if (!RegExp(r'[0-9]').hasMatch(v)) return 'Must contain at least 1 number';
+                      if (!RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(v)) return 'Must contain at least 1 special character';
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 30),
+
+                  // 7. Register Button (ElevatedButton)
+                  SizedBox(
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: _loading ? null : _register,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.deepPurple,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        elevation: 5,
+                      ),
+                      child: _loading
+                          ? const Center(
+                        child: SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 3,
+                          ),
+                        ),
+                      )
+                          : const Text(
+                        'Register',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // 8. Secondary Action (Login)
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (_) => const LoginPage()),
+                      );
+                    },
+                    child: const Text(
+                      'Already have an account? Login',
+                      style: TextStyle(color: Colors.deepPurple),
+                    ),
+                  ),
+                ],
               ),
-              TextFormField(
-                controller: _lastNameCtrl,
-                decoration: const InputDecoration(labelText: 'Last Name'),
-                validator: (v) => v!.isEmpty ? 'Enter your last name' : null,
-              ),
-              TextFormField(
-                controller: _emailCtrl,
-                decoration: const InputDecoration(labelText: 'Email'),
-                validator: (v) {
-                  if (!v!.contains('@')) return 'Enter a valid email';
-                  if (auth.fieldErrors.containsKey('email')) return auth.fieldErrors['email'];
-                  return null;
-                },
-              ),
-              TextFormField(
-                controller: _userNameCtrl,
-                decoration: const InputDecoration(labelText: 'Username'),
-                validator: (v) {
-                  if (v!.isEmpty) return 'Enter a username';
-                  if (auth.fieldErrors.containsKey('userName')) return auth.fieldErrors['userName'];
-                  return null;
-                },
-              ),
-              TextFormField(
-                controller: _passwordCtrl,
-                decoration: const InputDecoration(labelText: 'Password'),
-                obscureText: true,
-                validator: (v) {
-                  if (v == null || v.isEmpty) return 'Enter a password';
-                  if (v.length < 6) return 'Minimum 6 characters';
-                  if (!RegExp(r'[0-9]').hasMatch(v)) return 'Must contain at least 1 number';
-                  if (!RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(v)) return 'Must contain at least 1 special character';
-                  return null;
-                },
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _loading ? null : _register,
-                child: _loading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text('Register'),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (_) => const LoginPage()),
-                  );
-                },
-                child: const Text('Already have an account? Login'),
-              ),
-            ],
+            ),
           ),
         ),
       ),
