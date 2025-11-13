@@ -15,7 +15,8 @@ class AuthProvider with ChangeNotifier {
 
   Map<String, String> _fieldErrors = {};
   Map<String, String> get fieldErrors => _fieldErrors;
-
+  
+  //// cred ca mai bine face merge si cu master-ul. pe branch-ul asta gen. pai el a dat push pe master acuma
   // ---------------- LOGIN ----------------
   Future<bool> login(String email, String password) async {
     print('🔑 Login attempt for $email');
@@ -39,7 +40,7 @@ class AuthProvider with ChangeNotifier {
   }
 
   // ---------------- REGISTER ----------------
-  Future<bool> register({
+  Future<String?> register({
     required String firstName,
     required String lastName,
     required String email,
@@ -56,14 +57,16 @@ class AuthProvider with ChangeNotifier {
       password: password,
     );
 
+    print(result);
+    /// da ceva nu e bine dece imi zice success
     print('📩 Register response: $result');
 
     if (result['success'] == true) {
       _fieldErrors.clear();
-      return true;
+      return result['entity']['id']; // return user ID on success
     } else {
       _fieldErrors = result['errors'] ?? {};
-      return false;
+      return null;
     }
   }
 

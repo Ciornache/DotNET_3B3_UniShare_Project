@@ -3,8 +3,8 @@ import 'login_page.dart';
 import '../services/api_service.dart';
 
 class VerifyEmailPage extends StatefulWidget {
-  final String email;
-  const VerifyEmailPage({super.key, required this.email});
+  final String id;
+  const VerifyEmailPage({super.key, required this.id});
 
   @override
   State<VerifyEmailPage> createState() => _VerifyEmailPageState();
@@ -16,7 +16,7 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
 
   Future<void> _verify() async {
     setState(() => isLoading = true);
-    final success = await ApiService.confirmEmail(widget.email, codeController.text);
+    final success = await ApiService.confirmEmail(widget.id, codeController.text);
     setState(() => isLoading = false);
 
     if (success) {
@@ -30,7 +30,7 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
       );
     }
   }
-
+/// gen cum este setat widget.email?? da gen de unde iei valoarea aia. il iei din formularul de la register?
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -41,7 +41,7 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('Enter the verification code sent to ${widget.email}'),
+              Text('Enter the verification code sent to ${widget.id}'),
               TextField(
                 controller: codeController,
                 decoration: const InputDecoration(labelText: 'Code'),

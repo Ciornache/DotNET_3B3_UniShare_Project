@@ -57,8 +57,10 @@ class _RegisterPageState extends State<RegisterPage> {
     _formKey.currentState!.validate(); // revalidate to show backend errors
 
     if (!mounted) return;
-
-    if (success) {
+    /// ai cum sa trimiti variabila aia by reference sau ceva? sau defapt nu
+  /// ai undeva response pe aici?
+    /// unde apelezi endpoint-ul meu? da, dar nu apelezi de aici? sau se apeleaza automat
+    if (success != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Registration successful! Check your email for verification code.')),
       );
@@ -67,7 +69,7 @@ class _RegisterPageState extends State<RegisterPage> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => VerifyEmailPage(email: _emailCtrl.text.trim()),
+          builder: (_) => VerifyEmailPage(id: success),
         ),
       );
     } else {
