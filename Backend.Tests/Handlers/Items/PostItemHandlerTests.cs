@@ -1,4 +1,6 @@
 ﻿using Backend.Features.Items;
+using Backend.Features.Items.DTO;
+using Backend.Features.Items.Enums;
 using Backend.Persistence;
 using FluentAssertions;
 using MediatR;
@@ -25,18 +27,17 @@ public class PostItemHandlerTests
         // Arrange
         var dbContext = CreateInMemoryDbContext("a81a22fd-7df5-4d65-a0b5-aec7fa7dc5a3");
         var handler = new PostItemHandler(dbContext);
-        var request = new PostItemRequest
-        (
+        var dto = new PostItemDto (
             Guid.NewGuid(),
             "Test Item",
             "This is a test item.",
             "Electronics",
-             "New",
+            "New",
             "http://example.com/image.jpg"
         );
 
         // Act
-        var result = await handler.Handle(request);
+        var result = await handler.Handle(new PostItemRequest(dto));
 
         // Assert
         var statusResult = result.Should().BeAssignableTo<IStatusCodeHttpResult>().Subject;
@@ -46,8 +47,8 @@ public class PostItemHandlerTests
         var createItem = await dbContext.Items.FirstOrDefaultAsync( item => item.Name == "Test Item");
         Assert.NotNull(createItem);
         Assert.Equal("This is a test item.", createItem.Description);
-        Assert.Equal("Electronics", createItem.Category);
-        Assert.Equal("New", createItem.Condition);
+        Assert.Equal(ItemCategory.Electronics, createItem.Category);
+        Assert.Equal(ItemCondition.New, createItem.Condition);
         Assert.Equal("http://example.com/image.jpg", createItem.ImageUrl);
     }
 
@@ -57,21 +58,22 @@ public class PostItemHandlerTests
         // Arrange
         var dbContext = CreateInMemoryDbContext("a7870f45-b0fb-4185-b2cc-50f982d10021");
         var handler = new PostItemHandler(dbContext);
-        var request = new PostItemRequest
+        var dto = new PostItemDto
         (
             Guid.NewGuid(),
             null, 
             null,
-            null,
-            null,
-            null
+           "Others",
+            "Others",
+            "http://example.com/image.jpg"
+            
         );
 
 
         // Act & Assert
         await Assert.ThrowsAnyAsync<Exception>(async () => 
         {
-            await handler.Handle(request);
+            await handler.Handle(new PostItemRequest(dto));
         });
     }
 
@@ -81,7 +83,7 @@ public class PostItemHandlerTests
         // Arrange
         var dbContext = CreateInMemoryDbContext("663fff3c-00b6-41fa-9d8d-1887796af8a3");
         var handler = new PostItemHandler(dbContext);
-        var request = new PostItemRequest
+        var dto = new PostItemDto
         (
             Guid.NewGuid(),
             "Test Item",
@@ -93,15 +95,15 @@ public class PostItemHandlerTests
 
 
         // Act
-        var result = await handler.Handle(request);
+        var result = await handler.Handle(new PostItemRequest(dto));
 
         // Assert
         result.Should().NotBeNull();
         var createItem = await dbContext.Items.FirstOrDefaultAsync( item => item.Name == "Test Item");
         Assert.NotNull(createItem);
         Assert.Equal("This is a test item.", createItem.Description);
-        Assert.Equal("Electronics", createItem.Category);
-        Assert.Equal("New", createItem.Condition);
+        Assert.Equal(ItemCategory.Electronics, createItem.Category);
+        Assert.Equal(ItemCondition.New, createItem.Condition);
         Assert.Null(createItem.ImageUrl);
     }
     

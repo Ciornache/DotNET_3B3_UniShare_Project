@@ -1,5 +1,6 @@
 ﻿using Backend.Data;
 using Backend.Features.Items;
+using Backend.Features.Items.Enums;
 using Backend.Persistence;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
@@ -26,7 +27,7 @@ public class GetItemHandlerTests
         var dbContext = CreateInMemoryDbContext("02776839-a33e-4bba-b001-0167bf09e1b3");
         var handler = new GetItemHandler(dbContext);
         var itemId = Guid.Parse("cb397a9b-ec7c-4bb4-b683-363f07dd94d6");
-        var item = new Item { Id = itemId, OwnerId = Guid.Parse("78154ffd-dffa-47c7-9743-f522dee1ca1e"), Name = "Item 1", Description = "D1", Category = "C1", Condition = "New" };
+        var item = new Item { Id = itemId, OwnerId = Guid.Parse("78154ffd-dffa-47c7-9743-f522dee1ca1e"), Name = "Item 1", Description = "D1", Category = ItemCategory.Clothing, Condition = ItemCondition.New };
         dbContext.Items.Add(item);
         await dbContext.SaveChangesAsync();
 

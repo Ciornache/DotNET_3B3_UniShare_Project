@@ -1,4 +1,6 @@
-﻿namespace Backend.Tests.Handlers.Items;
+﻿using Backend.Features.Items.Enums;
+
+namespace Backend.Tests.Handlers.Items;
 
 using Backend.Data;
 using Backend.Features.Items;
@@ -27,7 +29,7 @@ public class DeleteItemHandlerTests
         var dbContext = CreateInMemoryDbContext("3c3712b6-c9c4-44f8-88a6-c61f66f7a54c");
         var handler = new DeleteItemHandler(dbContext);
         var itemId = Guid.Parse("cb397a9b-ec7c-4bb4-b683-363f07dd94d6");
-        var item = new Item { Id = itemId, OwnerId = Guid.Parse("78154ffd-dffa-47c7-9743-f522dee1ca1e"), Name = "ToDelete", Description = "D", Category = "C", Condition = "Used" };
+        var item = new Item { Id = itemId, OwnerId = Guid.Parse("78154ffd-dffa-47c7-9743-f522dee1ca1e"), Name = "ToDelete", Description = "D", Category = ItemCategory.Clothing, Condition = ItemCondition.Good };
         dbContext.Items.Add(item);
         await dbContext.SaveChangesAsync();
 
