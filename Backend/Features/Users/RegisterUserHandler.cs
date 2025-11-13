@@ -27,7 +27,11 @@ public class RegisterUserHandler(
         }
         
         await mediator.Send(new SendEmailVerificationRequest(user.Id), cancellationToken);
-        return Results.Ok(new {message = "User registered successfully. Please verify your email."});
+        
+        return Results.Created($"/api/users/{user.Id}", new {
+            message = "User registered successfully. Please verify your email.",
+            entity = user
+        });
         
     }
 }
