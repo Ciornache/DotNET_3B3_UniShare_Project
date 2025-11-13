@@ -3,17 +3,18 @@ using Backend.Persistence;
 using Backend.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using MediatR;
 
 namespace Backend.Features.Users;
 
 public class ConfirmEmailHandler(
     UserManager<User> userManager,
     ApplicationContext context,
-    IHashingService hashingService)
+    IHashingService hashingService) : IRequestHandler<ConfirmEmailRequest, IResult>
 {
-    public async Task<IResult> Handle(ConfirmEmailRequest request)
+    public async Task<IResult> Handle(ConfirmEmailRequest request, CancellationToken cancellationToken)
     {
-        var user = await userManager.FindByEmailAsync(request.Email);
+        var user = await userManager.FindByIdAsync(request.UserId.ToString());
         
         if (user == null)
         {
@@ -37,7 +38,7 @@ public class ConfirmEmailHandler(
                      && t.Code == hashedCode
                      && t.ExpiresAt > now)
             .OrderByDescending(t => t.CreatedAt)
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(cancellationToken);
 
         if (token == null)
         {
@@ -49,15 +50,10 @@ public class ConfirmEmailHandler(
 
         // Confirm user's email
         user.EmailConfirmed = true;
+
         await userManager.UpdateAsync(user);
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(cancellationToken);
 
-        return Results.Ok(new { message = "Email successfully verified" });
-    }
-
-    private bool VerifyCode(string providedCode, string hashedCode)
-    {
-        var hashedProvidedCode = hashingService.HashCode(providedCode);
-        return hashedProvidedCode == hashedCode;
+        return Results.Ok(new { message = "Email confirmed successfully" });
     }
 }

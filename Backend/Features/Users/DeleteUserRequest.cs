@@ -1,4 +1,5 @@
-﻿namespace Backend.Features.Users;
+﻿using MediatR;
 
-public record DeleteUserRequest(string Email);
+namespace Backend.Features.Users;
 
+public record DeleteUserRequest(Guid UserId) : IRequest<IResult>;

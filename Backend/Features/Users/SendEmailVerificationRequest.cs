@@ -1,4 +1,5 @@
-﻿namespace Backend.Features.Users;
+﻿using MediatR;
 
-public record SendEmailVerificationRequest(string Email);
+namespace Backend.Features.Users;
 
+public record SendEmailVerificationRequest(Guid UserId) : IRequest<IResult>;

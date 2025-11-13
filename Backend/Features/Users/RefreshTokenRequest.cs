@@ -1,4 +1,5 @@
-﻿namespace Backend.Features.Users;
+﻿using MediatR;
 
-public record RefreshTokenRequest(string RefreshToken);
+namespace Backend.Features.Users;
 
+public record RefreshTokenRequest(string RefreshToken) : IRequest<IResult>;

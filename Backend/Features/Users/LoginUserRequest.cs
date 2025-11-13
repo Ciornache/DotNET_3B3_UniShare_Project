@@ -1,3 +1,5 @@
-﻿namespace Backend.Features.Users;
+﻿using MediatR;
 
-public record LoginUserRequest(string Email, string Password);
+namespace Backend.Features.Users;
+
+public record LoginUserRequest(string Email, string Password) : IRequest<IResult>;

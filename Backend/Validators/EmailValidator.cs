@@ -8,11 +8,11 @@ public class EmailValidator : IUserValidator<User>
         if (user.Email != null) {
             bool isValid = System.Text.RegularExpressions.Regex.IsMatch(user.Email,
                 @"^[^@\s]+@student.uaic.ro$",
-                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-            if (isValid) {
+                System.Text.RegularExpressions.RegexOptions.None);
+            
+            if (isValid) 
                 return Task.FromResult(IdentityResult.Success);
-            }
-
+            
             return Task.FromResult(IdentityResult.Failed(new IdentityError
             {
                 Code = "InvalidEmailDomain",
