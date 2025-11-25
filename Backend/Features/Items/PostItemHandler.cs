@@ -1,13 +1,19 @@
 ﻿using Backend.Persistence;
 using Backend.Data;
 using Backend.Features.Items.Enums;
+using MediatR;
 
 namespace Backend.Features.Items;
 
-
-public class PostItemHandler(ApplicationContext dbContext)
+public class PostItemHandler : IRequestHandler<PostItemRequest, IResult>
 {
-    public async Task<IResult> Handle(PostItemRequest request)    
+    private readonly ApplicationContext _dbContext;
+    public PostItemHandler(ApplicationContext dbContext)
+    {
+        _dbContext = dbContext;
+    }
+
+    public async Task<IResult> Handle(PostItemRequest request, CancellationToken cancellationToken)
     {
         if (!Enum.TryParse<ItemCategory>(request.Item.Category, true, out var categoryEnum))
         {
@@ -41,8 +47,8 @@ public class PostItemHandler(ApplicationContext dbContext)
             ImageUrl = request.Item.ImageUrl,
         };
 
-        dbContext.Items.Add(item);
-        await dbContext.SaveChangesAsync();
+        _dbContext.Items.Add(item);
+        await _dbContext.SaveChangesAsync(cancellationToken);
 
         return Results.Created($"/items/{item.Id}", item);
     }

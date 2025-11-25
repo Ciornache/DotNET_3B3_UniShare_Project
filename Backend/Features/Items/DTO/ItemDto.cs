@@ -9,6 +9,5 @@ public record ItemDto
     string Condition,
     bool IsAvailable,
     string? ImageUrl,
-    
     string OwnerName
 );

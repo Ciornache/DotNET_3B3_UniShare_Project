@@ -28,10 +28,8 @@ public class ConfirmEmailHandler(
 
         var now = DateTime.UtcNow;
 
-        // Hash the provided code to compare with stored hash
         var hashedCode = hashingService.HashCode(request.Code);
         
-        // Find valid, unused, non-expired token with matching hashed code
         var token = await context.EmailConfirmationTokens
             .Where(t => t.UserId == user.Id 
                      && !t.IsUsed 
@@ -45,10 +43,8 @@ public class ConfirmEmailHandler(
             return Results.BadRequest(new { error = "Invalid or expired verification code" });
         }
 
-        // Mark token as used (persist it for audit trail)
         token.IsUsed = true;
 
-        // Confirm user's email
         user.EmailConfirmed = true;
 
         await userManager.UpdateAsync(user);

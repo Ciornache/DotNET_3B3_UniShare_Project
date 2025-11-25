@@ -1,5 +1,7 @@
 ﻿using Backend.Features.Items.DTO;
 
+using MediatR;
+
 namespace Backend.Features.Items;
 
-public record PostItemRequest(PostItemDto Item);
+public record PostItemRequest(PostItemDto Item) : IRequest<IResult>;

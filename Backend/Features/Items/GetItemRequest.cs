@@ -1,3 +1,5 @@
 ﻿namespace Backend.Features.Items;
 
-public record GetItemRequest(Guid Id);
+using MediatR;
+
+public record GetItemRequest(Guid Id) : IRequest<IResult>;

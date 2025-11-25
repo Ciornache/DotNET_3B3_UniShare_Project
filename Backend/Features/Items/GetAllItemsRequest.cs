@@ -1,3 +1,5 @@
 ﻿namespace Backend.Features.Items;
 
-public record GetAllItemsRequest();
+using MediatR;
+
+public record GetAllItemsRequest() : IRequest<IResult>;

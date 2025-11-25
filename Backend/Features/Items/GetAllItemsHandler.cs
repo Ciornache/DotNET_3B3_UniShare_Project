@@ -1,26 +1,33 @@
 ﻿using Backend.Features.Items.DTO;
 using Backend.Persistence;
 using Microsoft.EntityFrameworkCore;
+using MediatR;
 
 namespace Backend.Features.Items;
 
-public class GetAllItemsHandler(ApplicationContext dbContext)
+public class GetAllItemsHandler : IRequestHandler<GetAllItemsRequest, IResult>
 {
-    public async Task<IResult> Handle()    
+    private readonly ApplicationContext _dbContext;
+    public GetAllItemsHandler(ApplicationContext dbContext)
     {
-        var items = await dbContext.Items
-            .Include(i => i.Owner) // Include Owner pentru a accesa numele
+        _dbContext = dbContext;
+    }
+
+    public async Task<IResult> Handle(GetAllItemsRequest request, CancellationToken cancellationToken)
+    {
+        var items = await _dbContext.Items
+            .Include(i => i.Owner) 
             .Select(i => new ItemDto(
                 i.Id,
                 i.Name,
-                i.Description, // Păstrează-l sau pune o versiune trunchiată
-                i.Category.ToString(), // Convertește enum-ul la string
-                i.Condition.ToString(), // Convertește enum-ul la string
+                i.Description,
+                i.Category.ToString(), 
+                i.Condition.ToString(), 
                 i.IsAvailable,
                 i.ImageUrl, 
-                i.Owner.FirstName + " " + i.Owner.LastName
+                i.Owner != null ? (i.Owner.FirstName + " " + i.Owner.LastName).Trim() : string.Empty
             ))
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
         return Results.Ok(items);
     }
 }
