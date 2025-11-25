@@ -1,19 +1,27 @@
-﻿using Backend.Persistence;
+﻿using MediatR;
+using Backend.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Features.Items;
 
-public class DeleteItemHandler(ApplicationContext dbContext)
+public class DeleteItemHandler : IRequestHandler<DeleteItemRequest, IResult>
 {
-    public async Task<IResult> Handle(DeleteItemRequest request)    
+    private readonly ApplicationContext _dbContext;
+    public DeleteItemHandler(ApplicationContext dbContext)
     {
-        var item = await dbContext.Items.FindAsync(request.Id);
+        _dbContext = dbContext;
+    }
+
+    public async Task<IResult> Handle(DeleteItemRequest request, CancellationToken cancellationToken)
+    {
+        var item = await _dbContext.Items.FirstOrDefaultAsync(i => i.Id == request.Id, cancellationToken);
         if (item == null)
         {
             return Results.NotFound();
         }
 
-        dbContext.Items.Remove(item);
-        await dbContext.SaveChangesAsync();
+        _dbContext.Items.Remove(item);
+        await _dbContext.SaveChangesAsync(cancellationToken);
 
         return Results.NoContent();
     }

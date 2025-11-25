@@ -25,7 +25,7 @@ public class TokenService(IConfiguration configuration) : ITokenService
         var tokenDescriptor = new SecurityTokenDescriptor
         {
             Subject = new ClaimsIdentity(claims),
-            Expires = DateTime.UtcNow.AddMinutes(configuration.GetValue<int>("JwtSettings:ExpiryMinutes", 15)),
+            Expires = DateTime.UtcNow.AddSeconds(configuration.GetValue<int>("JwtSettings:ExpiryTime", 900)),
             Issuer = configuration["JwtSettings:Issuer"],
             Audience = configuration["JwtSettings:Audience"],
             SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
@@ -45,7 +45,7 @@ public class TokenService(IConfiguration configuration) : ITokenService
     
     public int GetAccessTokenExpirationInSeconds()
     {
-        return configuration.GetValue<int>("JwtSettings:ExpiryMinutes", 15) * 60;
+        return configuration.GetValue<int>("JwtSettings:ExpiryTime", 900);
     }
     
     public DateTime GetRefreshTokenExpirationDate()

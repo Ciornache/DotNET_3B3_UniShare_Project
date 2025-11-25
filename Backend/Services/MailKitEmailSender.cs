@@ -25,8 +25,7 @@ public class MailKitEmailSender(IConfiguration configuration) : IEmailSender
         var username = configuration["Smtp:Username"];
         var password = configuration["Smtp:Password"];
         
-        if (!string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(password))
-        {
+        if (!string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(password)) {
             await client.AuthenticateAsync(username, password);
         }
         

@@ -1,3 +1,5 @@
 ﻿namespace Backend.Features.Items;
 
-public record DeleteItemRequest(Guid Id);
+using MediatR;
+
+public record DeleteItemRequest(Guid Id) : IRequest<IResult>;

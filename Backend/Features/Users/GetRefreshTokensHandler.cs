@@ -2,16 +2,17 @@
 using Backend.Persistence;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using MediatR;
 
 namespace Backend.Features.Users;
 
-public class GetRefreshTokensByEmailHandler(
+public class GetRefreshTokensHandler(
     UserManager<User> userManager,
-    ApplicationContext context)
+    ApplicationContext context) : IRequestHandler<GetRefreshTokensRequest, IResult>
 {
-    public async Task<IResult> Handle(GetRefreshTokensByEmailRequest request)
+    public async Task<IResult> Handle(GetRefreshTokensRequest request, CancellationToken cancellationToken)
     {
-        var user = await userManager.FindByEmailAsync(request.Email);
+        var user = await userManager.FindByIdAsync(request.UserId.ToString());
         
         if (user == null)
         {
@@ -35,7 +36,7 @@ public class GetRefreshTokensByEmailHandler(
                 rt.ParentTokenId,
                 rt.ReplacedByTokenId
             })
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
         return Results.Ok(new
         {
@@ -45,4 +46,3 @@ public class GetRefreshTokensByEmailHandler(
         });
     }
 }
-

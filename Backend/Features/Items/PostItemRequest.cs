@@ -1,3 +1,7 @@
-﻿namespace Backend.Features.Items;
+﻿using Backend.Features.Items.DTO;
 
-public record PostItemRequest(Guid OwnerId,string Name,string Description,string Category,string Condition,string?ImageUrl);
+using MediatR;
+
+namespace Backend.Features.Items;
+
+public record PostItemRequest(PostItemDto Item) : IRequest<IResult>;

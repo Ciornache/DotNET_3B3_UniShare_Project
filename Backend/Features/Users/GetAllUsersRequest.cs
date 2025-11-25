@@ -1,3 +1,5 @@
-﻿namespace Backend.Features.Users;
+﻿using MediatR;
 
-public record GetAllUsersRequest();
+namespace Backend.Features.Users;
+
+public record GetAllUsersRequest() : IRequest<IResult>;

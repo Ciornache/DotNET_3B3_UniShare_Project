@@ -1,4 +1,5 @@
-﻿namespace Backend.Features.Users;
+﻿using MediatR;
 
-public record ConfirmEmailRequest(string Email, string Code);
+namespace Backend.Features.Users;
 
+public record ConfirmEmailRequest(Guid UserId, string Code) : IRequest<IResult>;

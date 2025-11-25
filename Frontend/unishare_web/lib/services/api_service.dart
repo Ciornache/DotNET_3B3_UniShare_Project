@@ -18,19 +18,20 @@ class ApiService {
     }
     return [];
   }
+  
   //confirm email
   // ----------------- Confirm Email -----------------
-  static Future<bool> confirmEmail(String email, String code) async {
+  static Future<bool> confirmEmail(String userId, String code) async {
     final url = Uri.parse('$baseUrl/auth/confirm-email');
 
     print('Sending confirm email request to: $url');
-    print('Email: $email, Code: $code');
+    print('UserId: $userId, Code: $code');
 
     final response = await http.post(
       url,
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
-        'email': email,
+        'userId': userId,
         'code': code,
       }),
     );
@@ -69,8 +70,12 @@ class ApiService {
     print('API register status: ${response.statusCode}');
     print('API register body: ${response.body}');
 
+    
     if (response.statusCode >= 200 && response.statusCode < 300) {
-      return {'success': true};
+      var rep = json.decode(response.body);
+      rep['success'] = true;
+      return rep;
+           
     } else {
       final data = jsonDecode(response.body);
       Map<String, String> errors = {};

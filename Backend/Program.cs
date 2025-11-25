@@ -13,6 +13,8 @@ using Backend.Services;
 
 using Backend.Data;
 using Backend.Features.Users;
+using Backend.Features.Users.Dtos;
+using MediatR;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddCors(options =>
@@ -54,6 +56,7 @@ builder.Services.AddAuthentication(options =>
     })
     .AddJwtBearer(options =>
     {
+        var jwtKey = builder.Configuration["JwtSettings:Key"] ?? throw new InvalidOperationException("Configuration value 'JwtSettings:Key' is missing.");
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
@@ -62,7 +65,7 @@ builder.Services.AddAuthentication(options =>
             ValidateIssuerSigningKey = true,
             ValidIssuer = builder.Configuration["JwtSettings:Issuer"],
             ValidAudience = builder.Configuration["JwtSettings:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JwtSettings:Key"]))
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
         };
     });
 
@@ -71,22 +74,12 @@ builder.Services.AddAuthorization();
 builder.Services.AddOpenApi();
 builder.Services.AddEndpointsApiExplorer();
 
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
+
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<ApplicationContext>(options =>
     options.UseNpgsql(connectionString));
-builder.Services.AddScoped<GetItemsHandler>();
-builder.Services.AddScoped<GetItemHandler>();
-builder.Services.AddScoped<PostItemHandler>();
-builder.Services.AddScoped<DeleteItemHandler>();
-builder.Services.AddScoped<RegisterUserHandler>();
-builder.Services.AddScoped<LoginUserHandler>();
-builder.Services.AddScoped<RefreshTokenHandler>();
-builder.Services.AddScoped<GetAllUsersHandler>();
-builder.Services.AddScoped<GetUserHandler>();
-builder.Services.AddScoped<GetRefreshTokensByEmailHandler>();
-builder.Services.AddScoped<SendEmailVerificationHandler>();
-builder.Services.AddScoped<ConfirmEmailHandler>();
-builder.Services.AddScoped<DeleteUserHandler>();
+
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IEmailSender, MailKitEmailSender>();
 builder.Services.AddScoped<IHashingService, HashingService>();
@@ -113,28 +106,28 @@ if (app.Environment.IsDevelopment())
 app.UseAuthentication();
 app.UseAuthorization();
 
-// ---------------- POPULARE ITEME ----------------
-using (var scope = app.Services.CreateScope())
-{
-    var context = scope.ServiceProvider.GetRequiredService<ApplicationContext>();
-    Backend.Data.DbInitializer.Initialize(context);
-}
-app.MapPost("/login", async (LoginUserRequest request, LoginUserHandler handler) => await handler.Handle(request));
-app.MapPost("/refresh", async (RefreshTokenRequest request, RefreshTokenHandler handler, HttpContext httpContext) => 
-    await handler.Handle(request, httpContext));
-app.MapPost("/register", async (RegisterUserRequest request, RegisterUserHandler handler) => await handler.Handle(request));
-app.MapPost("/auth/send-verification-code", async (SendEmailVerificationRequest request, SendEmailVerificationHandler handler) => 
-    await handler.Handle(request));
-app.MapPost("/auth/confirm-email", async (ConfirmEmailRequest request, ConfirmEmailHandler handler) => 
-    await handler.Handle(request));
-app.MapGet("/users", async (GetAllUsersHandler handler) => await handler.Handle(new GetAllUsersRequest()));
-app.MapGet("/users/{email}", async (string email, GetUserHandler handler) => await handler.Handle(new GetUserByEmailRequest(email)));
-app.MapGet("/users/{email}/refresh-tokens", async (string email, GetRefreshTokensByEmailHandler handler) => 
-    await handler.Handle(new GetRefreshTokensByEmailRequest(email)));
-app.MapDelete("/users/{email}", async (string email, DeleteUserHandler handler) => 
-    await handler.Handle(new DeleteUserRequest(email)));
-app.MapGet("/items", async (GetItemsHandler handler) => await handler.Handle());
-app.MapGet("items/{id:guid}", async (Guid id, GetItemHandler handler) => await handler.Handle(new GetItemRequest(id)));
-app.MapPost("items", async (PostItemRequest request, PostItemHandler handler) =>  await handler.Handle(request));
-app.MapDelete("items/{id:guid}", async (Guid id, DeleteItemHandler handler) => await handler.Handle(new DeleteItemRequest(id)));
+app.MapPost("/login", async (LoginUserDto dto, IMediator mediator) => 
+    await mediator.Send(new LoginUserRequest(dto.Email, dto.Password)));
+app.MapPost("/refresh", async (RefreshTokenDto dto, IMediator mediator) => 
+    await mediator.Send(new RefreshTokenRequest(dto.RefreshToken)));
+app.MapPost("/register", async (RegisterUserDto dto, IMediator mediator) => 
+    await mediator.Send(new RegisterUserRequest(dto.Email, dto.FirstName, dto.LastName, dto.Password)));
+app.MapPost("/auth/send-verification-code", async (SendEmailVerificationDto dto, IMediator mediator) => 
+    await mediator.Send(new SendEmailVerificationRequest(dto.UserId)));
+app.MapPost("/auth/confirm-email", async (ConfirmEmailDto dto, IMediator mediator) => 
+    await mediator.Send(new ConfirmEmailRequest(dto.UserId, dto.Code)));
+app.MapGet("/users", async (IMediator mediator) => await mediator.Send(new GetAllUsersRequest()));
+app.MapGet("/users/{userId:guid}", async (Guid userId, IMediator mediator) => await mediator.Send(new GetUserRequest(userId)));
+app.MapGet("/users/{userId:guid}/refresh-tokens", async (Guid userId, IMediator mediator) => 
+    await mediator.Send(new GetRefreshTokensRequest(userId)));
+app.MapDelete("/users/{userId:guid}", async (Guid userId, IMediator mediator) => 
+    await mediator.Send(new DeleteUserRequest(userId)));
+app.MapGet("users/{userId:guid}/items", async (Guid userId, IMediator mediator) => 
+    await mediator.Send(new GetAllUserItemsRequest(userId)));
+app.MapGet("users/{userId:guid}/items/{itemId:guid}", async (Guid userId, Guid itemId, IMediator mediator) => 
+    await mediator.Send(new GetUserItemRequest(userId, itemId)));
+app.MapGet("/items", async (IMediator mediator) => await mediator.Send(new GetAllItemsRequest()));
+app.MapGet("items/{id:guid}", async (Guid id, IMediator mediator) => await mediator.Send(new GetItemRequest(id)));
+app.MapPost("items", async (PostItemRequest request, IMediator mediator) =>  await mediator.Send(request));
+app.MapDelete("items/{id:guid}", async (Guid id, IMediator mediator) => await mediator.Send(new DeleteItemRequest(id)));
 await app.RunAsync();
