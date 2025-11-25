@@ -16,27 +16,30 @@ class _RegisterPageState extends State<RegisterPage> {
   final _firstNameCtrl = TextEditingController();
   final _lastNameCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
-  final _userNameCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
+  final _confirmPasswordCtrl = TextEditingController();
   bool _loading = false;
 
   @override
   void initState() {
     super.initState();
 
-    // ---------------- LISTENERS FOR CLEARING ERRORS ----------------
-    _emailCtrl.addListener(() => _clearFieldError('email'));
-    _userNameCtrl.addListener(() => _clearFieldError('userName'));
+    // Listener: dacă password-ul se schimbă, re-validate confirm password
+    _passwordCtrl.addListener(() {
+      if (_confirmPasswordCtrl.text.isNotEmpty) {
+        _formKey.currentState?.validate();
+      }
+    });
+
+    // Listener: dacă email-ul se modifică, șterge eventuale erori de backend
+    _emailCtrl.addListener(_clearFieldError);
   }
 
-  void _clearFieldError(String field) {
+  void _clearFieldError() {
     final auth = context.read<AuthProvider>();
-    if (auth.fieldErrors.containsKey(field)) {
-      auth.fieldErrors.remove(field);
-      // Force form revalidation to clear the error message
-      if (_formKey.currentState != null) _formKey.currentState!.validate();
-      // Notify widget to re-render
-      setState(() {});
+    if (auth.fieldErrors.containsKey('email')) {
+      auth.fieldErrors.remove('email');
+      setState(() {}); // re-draw pentru a elimina mesajul
     }
   }
 
@@ -45,27 +48,25 @@ class _RegisterPageState extends State<RegisterPage> {
 
     setState(() => _loading = true);
     final auth = context.read<AuthProvider>();
+
     final success = await auth.register(
       firstName: _firstNameCtrl.text.trim(),
       lastName: _lastNameCtrl.text.trim(),
       email: _emailCtrl.text.trim(),
-      userName: _userNameCtrl.text.trim(),
       password: _passwordCtrl.text.trim(),
     );
+
     setState(() => _loading = false);
 
-    _formKey.currentState!.validate(); // revalidate to show backend errors
+    _formKey.currentState!.validate(); // afișează eventualele erori de backend
 
     if (!mounted) return;
-    /// ai cum sa trimiti variabila aia by reference sau ceva? sau defapt nu
-  /// ai undeva response pe aici?
-    /// unde apelezi endpoint-ul meu? da, dar nu apelezi de aici? sau se apeleaza automat
+
     if (success != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Registration successful! Check your email for verification code.')),
       );
 
-      // Navigate to VerifyEmailPage
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -79,30 +80,31 @@ class _RegisterPageState extends State<RegisterPage> {
     }
   }
 
+  String? _validatePassword(String? v) {
+    if (v == null || v.isEmpty) return 'Enter a password';
+    if (v.length < 6) return 'Minimum 6 characters';
+    if (!RegExp(r'[0-9]').hasMatch(v)) return 'Must contain at least 1 number';
+    if (!RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(v)) return 'Must contain at least 1 special character';
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
-    final double maxFormWidth = 450.0; // Slightly wider for more fields
+    final double maxFormWidth = 450.0;
 
     return Scaffold(
-      // Removed AppBar for a cleaner look, kept title here for context
-      // If you prefer the AppBar, uncomment:
-      // appBar: AppBar(title: const Text('Register')),
-
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
           child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxWidth: maxFormWidth,
-            ),
+            constraints: BoxConstraints(maxWidth: maxFormWidth),
             child: Form(
               key: _formKey,
+              autovalidateMode: AutovalidateMode.onUserInteraction,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // 1. Prominent Title
                   const Text(
                     'Create Your Account',
                     style: TextStyle(
@@ -114,7 +116,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
                   const SizedBox(height: 30),
 
-                  // 2. First Name
+                  // First Name
                   TextFormField(
                     controller: _firstNameCtrl,
                     decoration: InputDecoration(
@@ -126,7 +128,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
                   const SizedBox(height: 15),
 
-                  // 3. Last Name
+                  // Last Name
                   TextFormField(
                     controller: _lastNameCtrl,
                     decoration: InputDecoration(
@@ -138,7 +140,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
                   const SizedBox(height: 15),
 
-                  // 4. Email
+                  // Email
                   TextFormField(
                     controller: _emailCtrl,
                     decoration: InputDecoration(
@@ -154,23 +156,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
                   const SizedBox(height: 15),
 
-                  // 5. Username
-                  TextFormField(
-                    controller: _userNameCtrl,
-                    decoration: InputDecoration(
-                      labelText: 'Username',
-                      prefixIcon: const Icon(Icons.alternate_email),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
-                    validator: (v) {
-                      if (v!.isEmpty) return 'Enter a username';
-                      if (auth.fieldErrors.containsKey('userName')) return auth.fieldErrors['userName'];
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 15),
-
-                  // 6. Password
+                  // Password
                   TextFormField(
                     controller: _passwordCtrl,
                     decoration: InputDecoration(
@@ -180,16 +166,35 @@ class _RegisterPageState extends State<RegisterPage> {
                     ),
                     obscureText: true,
                     validator: (v) {
-                      if (v == null || v.isEmpty) return 'Enter a password';
-                      if (v.length < 6) return 'Minimum 6 characters';
-                      if (!RegExp(r'[0-9]').hasMatch(v)) return 'Must contain at least 1 number';
-                      if (!RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(v)) return 'Must contain at least 1 special character';
+                      final error = _validatePassword(v);
+                      if (error != null) return error;
+                      // validate confirm password if not empty
+                      if (_confirmPasswordCtrl.text.isNotEmpty && v != _confirmPasswordCtrl.text) {
+                        return 'Passwords do not match';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 15),
+
+                  // Confirm Password
+                  TextFormField(
+                    controller: _confirmPasswordCtrl,
+                    decoration: InputDecoration(
+                      labelText: 'Confirm Password',
+                      prefixIcon: const Icon(Icons.lock_reset),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    obscureText: true,
+                    validator: (v) {
+                      if (v == null || v.isEmpty) return 'Confirm your password';
+                      if (v != _passwordCtrl.text) return 'Passwords do not match';
                       return null;
                     },
                   ),
                   const SizedBox(height: 30),
 
-                  // 7. Register Button (ElevatedButton)
+                  // Register Button
                   SizedBox(
                     height: 50,
                     child: ElevatedButton(
@@ -197,31 +202,24 @@ class _RegisterPageState extends State<RegisterPage> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.deepPurple,
                         foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                         elevation: 5,
                       ),
                       child: _loading
-                          ? const Center(
-                        child: SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 3,
-                          ),
+                          ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 3,
                         ),
                       )
-                          : const Text(
-                        'Register',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
+                          : const Text('Register', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     ),
                   ),
                   const SizedBox(height: 20),
 
-                  // 8. Secondary Action (Login)
+                  // Login link
                   TextButton(
                     onPressed: () {
                       Navigator.pushReplacement(
@@ -248,8 +246,8 @@ class _RegisterPageState extends State<RegisterPage> {
     _firstNameCtrl.dispose();
     _lastNameCtrl.dispose();
     _emailCtrl.dispose();
-    _userNameCtrl.dispose();
     _passwordCtrl.dispose();
+    _confirmPasswordCtrl.dispose();
     super.dispose();
   }
 }

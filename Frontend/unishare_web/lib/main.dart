@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:unishare_web/screens/main_page.dart';
 import 'providers/auth_provider.dart';
 import 'screens/login_page.dart';
 import 'screens/register_page.dart';
 import 'screens/home_page.dart';
 
-void main() {
+Future<void> main() async {
+  final authProvider = AuthProvider();
+  await authProvider.tryAutoLogin(); // încearcă să încarce token-ul
+
   runApp(
     ChangeNotifierProvider(
-      create: (_) => AuthProvider(),
+      create: (_) => authProvider,
       child: const UniShareApp(),
     ),
   );
@@ -19,13 +23,12 @@ class UniShareApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'UniShare',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      initialRoute: '/login',
+      theme: ThemeData(primarySwatch: Colors.blue),
+      home: auth.isAuthenticated ? const MainPage() : const LoginPage(),
       routes: {
         '/login': (_) => const LoginPage(),
         '/register': (_) => const RegisterPage(),

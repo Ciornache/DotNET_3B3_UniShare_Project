@@ -1,8 +1,10 @@
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../services/api_service.dart';
 
 class AuthProvider with ChangeNotifier {
+  static const _storage = FlutterSecureStorage();
+
   String? _token;
   String? _refreshToken;
   String? _currentUserEmail;
@@ -15,12 +17,9 @@ class AuthProvider with ChangeNotifier {
 
   Map<String, String> _fieldErrors = {};
   Map<String, String> get fieldErrors => _fieldErrors;
-  
-  //// cred ca mai bine face merge si cu master-ul. pe branch-ul asta gen. pai el a dat push pe master acuma
+
   // ---------------- LOGIN ----------------
   Future<bool> login(String email, String password) async {
-    print('🔑 Login attempt for $email');
-
     final response = await ApiService.login(email: email, password: password);
 
     if (response != null && response.containsKey('accessToken')) {
@@ -30,12 +29,8 @@ class AuthProvider with ChangeNotifier {
 
       await _saveCredentials();
       notifyListeners();
-
-      print('✅ Login successful, token saved');
       return true;
     }
-
-    print('❌ Login failed');
     return false;
   }
 
@@ -44,28 +39,20 @@ class AuthProvider with ChangeNotifier {
     required String firstName,
     required String lastName,
     required String email,
-    required String userName,
     required String password,
   }) async {
-    print('📝 Register request: $firstName, $lastName, $email, $userName');
-
     final result = await ApiService.register(
       firstName: firstName,
       lastName: lastName,
       email: email,
-      userName: userName,
       password: password,
     );
 
-    print(result);
-    /// da ceva nu e bine dece imi zice success
-    print('📩 Register response: $result');
-
     if (result['success'] == true) {
       _fieldErrors.clear();
-      return result['entity']['id']; // return user ID on success
+      return result['entity']['id']; // return user ID
     } else {
-      _fieldErrors = result['errors'] ?? {};
+      _fieldErrors = Map<String, String>.from(result['errors'] ?? {});
       return null;
     }
   }
@@ -77,36 +64,36 @@ class AuthProvider with ChangeNotifier {
 
   // ---------------- LOGOUT ----------------
   Future<void> logout() async {
-    print('🚪 Logging out user $_currentUserEmail');
     _token = null;
     _refreshToken = null;
     _currentUserEmail = null;
     notifyListeners();
 
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('token');
-    await prefs.remove('refreshToken');
-    await prefs.remove('userEmail');
+    await _storage.delete(key: 'token');
+    await _storage.delete(key: 'refreshToken');
+    await _storage.delete(key: 'userEmail');
   }
 
   // ---------------- AUTO LOGIN ----------------
   Future<void> tryAutoLogin() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (!prefs.containsKey('token')) return;
+    final storedToken = await _storage.read(key: 'token');
+    final storedRefresh = await _storage.read(key: 'refreshToken');
+    final storedEmail = await _storage.read(key: 'userEmail');
 
-    _token = prefs.getString('token');
-    _refreshToken = prefs.getString('refreshToken');
-    _currentUserEmail = prefs.getString('userEmail');
+    if (storedToken == null || storedRefresh == null || storedEmail == null) return;
 
+    _token = storedToken;
+    _refreshToken = storedRefresh;
+    _currentUserEmail = storedEmail;
     notifyListeners();
-    print('♻️ Auto-login for $_currentUserEmail');
   }
 
   // ---------------- SAVE TOKEN ----------------
   Future<void> _saveCredentials() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('token', _token ?? '');
-    await prefs.setString('refreshToken', _refreshToken ?? '');
-    await prefs.setString('userEmail', _currentUserEmail ?? '');
+    if (_token != null && _refreshToken != null && _currentUserEmail != null) {
+      await _storage.write(key: 'token', value: _token);
+      await _storage.write(key: 'refreshToken', value: _refreshToken);
+      await _storage.write(key: 'userEmail', value: _currentUserEmail);
+    }
   }
 }

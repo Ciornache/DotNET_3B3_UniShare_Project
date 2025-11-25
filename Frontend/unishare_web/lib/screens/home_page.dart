@@ -15,6 +15,22 @@ class _HomePageState extends State<HomePage> {
   List<dynamic> items = [];
   bool isLoading = true;
 
+  final Map<String, String> categoryMap = {
+    '0': 'Electronics',
+    '1': 'Books',
+    '2': 'Accessories',
+    '3': 'Kitchen',
+    '4': 'Others',
+  };
+
+  final Map<String, String> conditionMap = {
+    '0': 'Excellent',
+    '1': 'Good',
+    '2': 'Fair',
+    '3': 'Poor',
+  };
+
+
   @override
   void initState() {
     super.initState();
@@ -61,6 +77,9 @@ class _HomePageState extends State<HomePage> {
         ),
         itemBuilder: (context, index) {
           final item = items[index];
+          final categoryText = categoryMap[item['category'].toString()] ?? 'Unknown';
+          final conditionText = conditionMap[item['condition'].toString()] ?? 'Unknown';
+
           return Card(
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
@@ -104,7 +123,7 @@ class _HomePageState extends State<HomePage> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          item['category'] ?? '',
+                          categoryText,
                           style: TextStyle(
                             color: Colors.grey[700],
                             fontSize: 13,
@@ -112,7 +131,7 @@ class _HomePageState extends State<HomePage> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          item['condition'] ?? '',
+                          conditionText,
                           style: const TextStyle(
                             color: Colors.blueGrey,
                             fontSize: 12,
