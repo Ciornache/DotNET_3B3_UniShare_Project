@@ -12,9 +12,16 @@ using Backend.Validators;
 using Backend.Services;
 
 using Backend.Data;
+using Backend.Features.Booking;
+using Backend.Features.Booking.DTO;
 using Backend.Features.Users;
 using Backend.Features.Users.Dtos;
 using MediatR;
+
+using FluentValidation;
+using FluentValidation.AspNetCore;
+using AutoMapper;
+using Backend.Mapping;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddCors(options =>
@@ -75,6 +82,7 @@ builder.Services.AddOpenApi();
 builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
+builder.Services.AddAutoMapper(cfg => cfg.AddProfile<CreateBookingMapping>(), typeof(CreateBookingMapping));
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<ApplicationContext>(options =>
@@ -85,6 +93,10 @@ builder.Services.AddScoped<IEmailSender, MailKitEmailSender>();
 builder.Services.AddScoped<IHashingService, HashingService>();
 
 builder.Services.AddScoped<IUserValidator<User>, EmailValidator>();
+builder.Services.AddScoped<CreateBookingHandler>();
+
+builder.Services.AddValidatorsFromAssemblyContaining<CreateBookingRequest>();
+builder.Services.AddFluentValidationAutoValidation();
 
 var app = builder.Build();
 app.UseCors("AllowAll");
@@ -95,7 +107,7 @@ if (app.Environment.IsDevelopment())
     (c =>
         {
             c.SwaggerEndpoint("/swagger/v1/swagger.json", "UniShare API V1");
-            c.RoutePrefix = string.Empty; // Set Swagger UI at app's root
+            c.RoutePrefix = string.Empty; 
             c.DisplayRequestDuration();
         }
     );
@@ -130,4 +142,6 @@ app.MapGet("/items", async (IMediator mediator) => await mediator.Send(new GetAl
 app.MapGet("items/{id:guid}", async (Guid id, IMediator mediator) => await mediator.Send(new GetItemRequest(id)));
 app.MapPost("items", async (PostItemRequest request, IMediator mediator) =>  await mediator.Send(request));
 app.MapDelete("items/{id:guid}", async (Guid id, IMediator mediator) => await mediator.Send(new DeleteItemRequest(id)));
+app.MapPost( "/bookings", async (CreateBookingDto dto, IMediator mediator) => 
+    await mediator.Send(new CreateBookingRequest(dto)));
 await app.RunAsync();
