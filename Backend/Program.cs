@@ -142,6 +142,7 @@ app.MapGet("/items", async (IMediator mediator) => await mediator.Send(new GetAl
 app.MapGet("items/{id:guid}", async (Guid id, IMediator mediator) => await mediator.Send(new GetItemRequest(id)));
 app.MapPost("items", async (PostItemRequest request, IMediator mediator) =>  await mediator.Send(request));
 app.MapDelete("items/{id:guid}", async (Guid id, IMediator mediator) => await mediator.Send(new DeleteItemRequest(id)));
+app.MapGet("/bookings", async (IMediator mediator) => await mediator.Send(new GetAllBookingsRequest()));
 app.MapPost( "/bookings", async (CreateBookingDto dto, IMediator mediator) => 
     await mediator.Send(new CreateBookingRequest(dto)));
 await app.RunAsync();
