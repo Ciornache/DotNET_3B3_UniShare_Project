@@ -23,7 +23,10 @@ public class ConfirmEmailHandler(
         }
 
         var jwtToken = handler.ReadJwtToken(request.JwtToken);
-        var userIdClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
+        var userIdClaim = jwtToken.Claims.FirstOrDefault(c => 
+            c.Type == ClaimTypes.NameIdentifier || 
+            c.Type == JwtRegisteredClaimNames.Sub || 
+            c.Type == "sub");
 
         if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
         {

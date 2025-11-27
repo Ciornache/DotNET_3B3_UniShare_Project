@@ -15,7 +15,6 @@ public class GetAllUniversitiesHandler(ApplicationContext dbContext, IMapper map
             .AsNoTracking()
             .Select(u => mapper.Map<UniversityDto>(u));
         
-        
         return Task.FromResult(Results.Ok(universities));
     }
 }

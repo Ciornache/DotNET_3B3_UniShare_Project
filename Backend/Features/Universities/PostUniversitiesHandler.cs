@@ -11,6 +11,8 @@ public class PostUniversitiesHandler(ApplicationContext dbContext, IMapper mappe
     public Task<IResult> Handle(PostUniversitiesRequest request, CancellationToken cancellationToken)
     {
         University university = mapper.Map<University>(request.PostUniversityDto);
+        university.Id = Guid.NewGuid();
+        university.CreatedAt = DateTime.UtcNow;
         dbContext.Set<University>().Add(university);
         return dbContext.SaveChangesAsync(cancellationToken)
             .ContinueWith<IResult>(t => Results.Created("/universities", university), cancellationToken);

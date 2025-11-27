@@ -10,8 +10,13 @@ public class UniversityMapper : Profile
     public UniversityMapper()
     {
         CreateMap<University, UniversityDto>();
+        
         CreateMap<UniversityDto, University>()
-            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => Guid.NewGuid()))
-            .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src =>  DateTime.UtcNow));
+            .ForMember(dest => dest.Id, opt => opt.Ignore())
+            .ForMember(dest => dest.CreatedAt, opt => opt.Ignore());
+
+        CreateMap<PostUniversityDto, University>()
+            .ForMember(dest => dest.Id, opt => opt.Ignore())
+            .ForMember(dest => dest.CreatedAt, opt => opt.Ignore());
     }
 }
