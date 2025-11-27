@@ -5,9 +5,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Features.Booking;
 
-public class GetAllBookingsHandler(ApplicationContext dbContext) : IRequestHandler<GetAllItemsRequest, IResult>
+public class GetAllBookingsHandler(ApplicationContext dbContext) : IRequestHandler<GetAllBookingsRequest, IResult>
 {
-    public async Task<IResult> Handle(GetAllItemsRequest request, CancellationToken cancellationToken)
+    public async Task<IResult> Handle(GetAllBookingsRequest request, CancellationToken cancellationToken)
     {
         var bookings = await dbContext.Bookings.ToListAsync(cancellationToken);
         return Results.Ok(bookings);

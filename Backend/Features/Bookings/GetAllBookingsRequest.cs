@@ -1,3 +1,5 @@
-﻿namespace Backend.Features.Booking;
+﻿using MediatR;
 
-public record GetAllBookingsRequest();
+namespace Backend.Features.Booking;
+
+public record GetAllBookingsRequest() : IRequest<IResult>;
