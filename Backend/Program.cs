@@ -21,6 +21,7 @@ using MediatR;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using AutoMapper;
+using Backend.Features.Bookings;
 using Backend.Mapping;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -134,12 +135,14 @@ app.MapGet("/users", async (IMediator mediator) => await mediator.Send(new GetAl
 app.MapGet("/users/{userId:guid}", async (Guid userId, IMediator mediator) => await mediator.Send(new GetUserRequest(userId)));
 app.MapGet("/users/{userId:guid}/refresh-tokens", async (Guid userId, IMediator mediator) => 
     await mediator.Send(new GetRefreshTokensRequest(userId)));
-app.MapDelete("/users/{userId:guid}", async (Guid userId, IMediator mediator) => 
-    await mediator.Send(new DeleteUserRequest(userId)));
 app.MapGet("users/{userId:guid}/items", async (Guid userId, IMediator mediator) => 
     await mediator.Send(new GetAllUserItemsRequest(userId)));
 app.MapGet("users/{userId:guid}/items/{itemId:guid}", async (Guid userId, Guid itemId, IMediator mediator) => 
     await mediator.Send(new GetUserItemRequest(userId, itemId)));
+app.MapGet("users/{userId:guid}/bookings", async (Guid userId, IMediator mediator) => 
+    await mediator.Send(new GetUserBookingsRequest(userId)));
+app.MapDelete("/users/{userId:guid}", async (Guid userId, IMediator mediator) => 
+    await mediator.Send(new DeleteUserRequest(userId)));
 
 app.MapGet("/items", async (IMediator mediator) => await mediator.Send(new GetAllItemsRequest()));
 app.MapGet("items/{id:guid}", async (Guid id, IMediator mediator) => await mediator.Send(new GetItemRequest(id)));
@@ -150,4 +153,6 @@ app.MapGet("/bookings", async (IMediator mediator) => await mediator.Send(new Ge
 app.MapGet("/bookings/{id:guid}", async (Guid id, IMediator mediator) => await mediator.Send(new GetBookingRequest(id)));
 app.MapPost( "/bookings", async (CreateBookingDto dto, IMediator mediator) => 
     await mediator.Send(new CreateBookingRequest(dto)));
+app.MapDelete("/bookings/{id:guid}", async (Guid id, IMediator mediator) => await mediator.Send(new DeleteBookingRequest(id)));
+
 await app.RunAsync();
