@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.AspNetCore.Identity;
+using FluentValidation;
 
 using Backend.TokenGenerators;
 using Backend.Validators;
@@ -14,8 +15,10 @@ using Backend.Services;
 using Backend.Data;
 using Backend.Features.Booking;
 using Backend.Features.Booking.DTO;
+using Backend.Features.Shared.Pipeline;
 using Backend.Features.Users;
 using Backend.Features.Users.Dtos;
+using Backend.Mapper;
 using MediatR;
 
 using FluentValidation;
@@ -85,6 +88,12 @@ builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
 builder.Services.AddAutoMapper(cfg => cfg.AddProfile<CreateBookingMapping>(), typeof(CreateBookingMapping));
+builder.Services.AddAutoMapper(cfg=>
+{
+    cfg.AddProfile<ItemProfile>();
+});
+builder.Services.AddValidatorsFromAssembly(typeof(Program).Assembly);
+builder.Services.AddScoped(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<ApplicationContext>(options =>
