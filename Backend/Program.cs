@@ -22,6 +22,7 @@ using FluentValidation;
 using FluentValidation.AspNetCore;
 using AutoMapper;
 using Backend.Features.Bookings;
+using Backend.Features.Bookings.DTO;
 using Backend.Mapping;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -96,8 +97,8 @@ builder.Services.AddScoped<IHashingService, HashingService>();
 builder.Services.AddScoped<IUserValidator<User>, EmailValidator>();
 builder.Services.AddScoped<CreateBookingHandler>();
 
-
 builder.Services.AddValidatorsFromAssemblyContaining<CreateBookingRequest>();
+builder.Services.AddValidatorsFromAssemblyContaining<UpdateBookingStatusRequest>();
 builder.Services.AddFluentValidationAutoValidation();
 
 var app = builder.Build();
@@ -157,6 +158,8 @@ app.MapGet("/bookings", async (IMediator mediator) => await mediator.Send(new Ge
 app.MapGet("/bookings/{id:guid}", async (Guid id, IMediator mediator) => await mediator.Send(new GetBookingRequest(id)));
 app.MapPost( "/bookings", async (CreateBookingDto dto, IMediator mediator) => 
     await mediator.Send(new CreateBookingRequest(dto)));
+app.MapPatch("/bookings/{id:guid}", async (Guid id, UpdateBookingStatusDto bookingStatusDto, IMediator mediator) => 
+    await mediator.Send(new UpdateBookingStatusRequest(id, bookingStatusDto)));
 app.MapDelete("/bookings/{id:guid}", async (Guid id, IMediator mediator) => await mediator.Send(new DeleteBookingRequest(id)));
 
 await app.RunAsync();
