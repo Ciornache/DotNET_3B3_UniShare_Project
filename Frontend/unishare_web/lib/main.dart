@@ -5,6 +5,7 @@ import 'providers/auth_provider.dart';
 import 'screens/login_page.dart';
 import 'screens/register_page.dart';
 import 'screens/home_page.dart';
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 Future<void> main() async {
   final authProvider = AuthProvider();
@@ -25,6 +26,7 @@ class UniShareApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     return MaterialApp(
+      navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       title: 'UniShare',
       theme: ThemeData(primarySwatch: Colors.blue),

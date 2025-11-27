@@ -1,10 +1,18 @@
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:unishare_web/services/secure_storage_service.dart';
 
+import '../main.dart';
+
 class ApiService {
   static const String baseUrl = 'http://localhost:5083';
-
+  static getUserIdFromToken(String? token){
+    final parts = token!.split('.');
+    final payload = jsonDecode(utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))));
+    final ownerId = payload['sub']; // sau ce claim folosești pentru ID
+    return ownerId;
+  }
   // ----------------- Get Items -----------------
   static Future<List<Map<String, dynamic>>> getItems() async {
     final token = await SecureStorageService.getAccessToken();
@@ -111,6 +119,19 @@ class ApiService {
       await SecureStorageService.saveRefreshToken(data['refreshToken']);
       await SecureStorageService.saveEmail(email);
 
+      // ❗ Verificăm dacă email-ul nu e verificat și afișăm SnackBar
+      if (data['emailVerified'] != null && data['emailVerified'] == false) {
+        // Trebuie să ai un navigatorKey definit în MaterialApp pentru a putea folosi context aici
+        ScaffoldMessenger.of(navigatorKey.currentContext!).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Email not verified. Please go to your profile to verify your email.',
+            ),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+
       return data;
     }
 
@@ -129,9 +150,7 @@ class ApiService {
       final token = await SecureStorageService.getAccessToken(); // citim token-ul
 
       // Decodare payload pentru ownerId (necesită token valid)
-      final parts = token!.split('.');
-      final payload = jsonDecode(utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))));
-      final ownerId = payload['sub']; // sau ce claim folosești pentru ID
+      final ownerId=getUserIdFromToken(token);
 
 
       final url = Uri.parse('$baseUrl/items');
@@ -167,6 +186,38 @@ class ApiService {
       }
     } catch (e) {
       print('Exception during postItem: $e');
+      return false;
+    }
+  }
+  static Future<bool?> getEmailVerifiedStatus(String token) async {
+    final url = Uri.parse('http://localhost:5083/auth/email-verified/${getUserIdFromToken(token)}');
+    final response = await http.get(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['emailVerified'] as bool?;
+    }
+
+    return null;
+  }
+  static Future<bool> sendVerificationCode(String userId) async {
+    final url = Uri.parse('$baseUrl/auth/send-verification-code');
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'userId': userId}),
+    );
+
+    if (response.statusCode == 200) {
+      return true;
+    } else {
+      print('Failed to send verification code: ${response.body}');
       return false;
     }
   }

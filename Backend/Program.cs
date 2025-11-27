@@ -130,4 +130,8 @@ app.MapGet("/items", async (IMediator mediator) => await mediator.Send(new GetAl
 app.MapGet("items/{id:guid}", async (Guid id, IMediator mediator) => await mediator.Send(new GetItemRequest(id)));
 app.MapPost("items", async (PostItemRequest request, IMediator mediator) =>  await mediator.Send(request));
 app.MapDelete("items/{id:guid}", async (Guid id, IMediator mediator) => await mediator.Send(new DeleteItemRequest(id)));
+app.MapGet("/auth/email-verified/{userId:guid}", 
+    async (Guid userId, IMediator mediator) =>
+        await mediator.Send(new GetEmailVerifiedStatusRequest(userId)));
+
 await app.RunAsync();

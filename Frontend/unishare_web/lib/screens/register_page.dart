@@ -64,14 +64,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
     if (success != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Registration successful! Check your email for verification code.')),
-      );
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => VerifyEmailPage(id: success),
-        ),
+        const SnackBar(content: Text('Registration successful!')),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(

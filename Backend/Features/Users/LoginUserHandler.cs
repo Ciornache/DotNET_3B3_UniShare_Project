@@ -19,9 +19,6 @@ public class LoginUserHandler(
         
         if (user == null || !await userManager.CheckPasswordAsync(user, request.Password)) 
             return Results.Unauthorized();
-
-        if (!user.EmailConfirmed)
-            return Results.BadRequest(new { error = "Please verify your email address before logging in" });
         
         var existingTokens = await context.RefreshTokens
             .Where(rt => rt.UserId == user.Id)
@@ -47,11 +44,12 @@ public class LoginUserHandler(
         
         context.RefreshTokens.Add(refreshToken);
         await context.SaveChangesAsync(cancellationToken);
-        
+        var isEmailVerified = user.EmailConfirmed;
         var response = new LoginUserResponseDto(
             AccessToken: accessToken,
             RefreshToken: refreshTokenString,
-            ExpiresIn: tokenService.GetAccessTokenExpirationInSeconds()
+            ExpiresIn: tokenService.GetAccessTokenExpirationInSeconds(),
+            EmailVerified: isEmailVerified 
         );
         
         return Results.Ok(response);
