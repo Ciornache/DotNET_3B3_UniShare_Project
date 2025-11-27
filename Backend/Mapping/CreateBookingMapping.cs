@@ -10,7 +10,6 @@ public class CreateBookingMapping : Profile
     public CreateBookingMapping()
     {
         CreateMap<CreateBookingRequest, Booking>()
-            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Booking.Id))
             .ForMember(dest => dest.ItemId, opt => opt.MapFrom(src => src.Booking.ItemId))
             .ForMember(dest => dest.BorrowerId, opt => opt.MapFrom(src => src.Booking.BorrowerId))
             .ForMember(dest => dest.RequestedOn, opt => opt.MapFrom(src => src.Booking.RequestedOn))
@@ -18,7 +17,6 @@ public class CreateBookingMapping : Profile
             .ForMember(dest => dest.EndDate, opt => opt.MapFrom(src => src.Booking.EndDate));
         
         CreateMap<CreateBookingDto, Booking>()
-            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
             .ForMember(dest => dest.ItemId, opt => opt.MapFrom(src => src.ItemId))
             .ForMember(dest => dest.BorrowerId, opt => opt.MapFrom(src => src.BorrowerId))
             .ForMember(dest => dest.RequestedOn, opt => opt.MapFrom(src => src.RequestedOn))
