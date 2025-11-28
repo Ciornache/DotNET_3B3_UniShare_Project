@@ -12,34 +12,43 @@ public class RegisterUserHandler(
     UserManager<User> userManager,
     IMediator mediator,
     IMapper mapper,
-    ApplicationContext dbContext) : IRequestHandler<RegisterUserRequest, IResult>
+    ApplicationContext dbContext
+) : IRequestHandler<RegisterUserRequest, IResult>
 {
     public async Task<IResult> Handle(RegisterUserRequest request, CancellationToken cancellationToken)
     {
-        RegisterUserDto registerUserDto = request.RegisterUserDto;
+        var dto = request.RegisterUserDto;
+
+        // verificăm dacă universitatea există
         var university = await dbContext.Universities
-            .FirstOrDefaultAsync(u => u.Name == registerUserDto.UniversityName, cancellationToken);
-        
-        var user = mapper.Map<User>(registerUserDto);
-        if (university != null) {
-            user.UniversityId = university.Id;
+            .FirstOrDefaultAsync(u => u.Id == dto.UniversityId, cancellationToken);
+
+        if (university == null)
+        {
+            return Results.BadRequest(new {
+                message = "Invalid university ID."
+            });
         }
 
-        var result = await userManager.CreateAsync(user, registerUserDto.Password);
-        
+        // mapăm DTO → User
+        var user = mapper.Map<User>(dto);
+
+        // Creăm utilizatorul
+        var result = await userManager.CreateAsync(user, dto.Password);
+
         if (!result.Succeeded)
         {
             return Results.BadRequest(result.Errors);
         }
-        
+
+        // Trimitem email verificare
         await mediator.Send(new SendEmailVerificationRequest(user.Id), cancellationToken);
-        
+
         var userDto = mapper.Map<UserDto>(user);
-        
+
         return Results.Created($"/api/users/{user.Id}", new {
             message = "User registered successfully. Please verify your email.",
             entity = userDto
         });
-
     }
 }

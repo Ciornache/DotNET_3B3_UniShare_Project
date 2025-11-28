@@ -72,6 +72,10 @@ class _RegisterPageState extends State<RegisterPage> {
     if (success != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Registration successful!')),
+        );
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginPage()),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -146,6 +150,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
                   // University dropdown
                   DropdownButtonFormField<String>(
+                    isExpanded: true,
                     value: _selectedUniversityId,
                     decoration: InputDecoration(
                       labelText: 'University',
@@ -159,6 +164,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     items: auth.universities
                         .map<DropdownMenuItem<String>>(
                           (u) => DropdownMenuItem<String>(
+
                         value: u.id, // ID-ul universității
                         child: Text("${u.name} (${u.shortCode})"),
                       ),
