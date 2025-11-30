@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Backend.Persistence;
 using Backend.Features.Booking;
+using Backend.Features.Bookings.Enums;
 
 namespace Backend.Validators;
 
@@ -55,7 +56,7 @@ public class CreateBookingValidator : AbstractValidator<CreateBookingRequest>
             var dto = request.Booking!;
             var overlapping = await _context.Bookings
                 .Where(b => b.ItemId == dto.ItemId)
-                .Where(b => b.Status != "Rejected" && b.Status != "Canceled")
+                .Where(b => b.BookingStatus != BookingStatus.Rejected && b.BookingStatus != BookingStatus.Canceled)
                 .Where(b => b.StartDate < dto.EndDate && dto.StartDate < b.EndDate)
                 .AnyAsync();
 

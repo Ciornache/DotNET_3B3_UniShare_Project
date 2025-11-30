@@ -1,3 +1,5 @@
-﻿namespace Backend.Features.Bookings.DTO;
+﻿using Backend.Features.Bookings.Enums;
 
-public record UpdateBookingStatusDto(Guid UserId, string Status);
+namespace Backend.Features.Bookings.DTO;
+
+public record UpdateBookingStatusDto(Guid UserId, BookingStatus BookingStatus);
