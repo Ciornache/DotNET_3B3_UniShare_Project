@@ -1,3 +1,5 @@
+using Backend.Features.Bookings.Enums;
+
 namespace Backend.Features.Bookings.DTO;
 
 public record BookingDto(
@@ -7,7 +9,7 @@ public record BookingDto(
     DateTime RequestedOn,
     DateTime StartDate,
     DateTime EndDate,
-    string Status,
+    BookingStatus BookingStatus,
     DateTime? ApprovedOn,
     DateTime? CompletedOn,
     ItemDto? Item

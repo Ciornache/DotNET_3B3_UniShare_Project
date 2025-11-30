@@ -1,4 +1,6 @@
-﻿namespace Backend.Data;
+﻿using Backend.Features.Bookings.Enums;
+
+namespace Backend.Data;
 
 using System;
 using System.ComponentModel.DataAnnotations;
@@ -49,7 +51,7 @@ public class Booking
     [Required]
     [MaxLength(50)]
     [Column(TypeName = "varchar(50)")]
-    public string Status { get; set; } = "Pending";
+    public BookingStatus BookingStatus { get; set; } = BookingStatus.Pending;
 
     /// <summary>
     /// Timestamp of when the booking was approved by the owner.

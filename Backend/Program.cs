@@ -13,19 +13,19 @@ using Backend.Validators;
 using Backend.Services;
 
 using Backend.Data;
+using Backend.Features.Universities;
 using Backend.Features.Booking;
 using Backend.Features.Booking.DTO;
 using Backend.Features.Shared.Pipeline;
 using Backend.Features.Users;
 using Backend.Features.Users.Dtos;
-using Backend.Mapper;
+using Backend.Mappers;
 using MediatR;
 
-using FluentValidation;
 using FluentValidation.AspNetCore;
-using AutoMapper;
 using Backend.Features.Bookings;
 using Backend.Features.Bookings.DTO;
+using Backend.Mapper;
 using Backend.Mapping;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -87,13 +87,6 @@ builder.Services.AddOpenApi();
 builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
-builder.Services.AddAutoMapper(cfg => cfg.AddProfile<CreateBookingMapping>(), typeof(CreateBookingMapping));
-builder.Services.AddAutoMapper(cfg=>
-{
-    cfg.AddProfile<ItemProfile>();
-});
-builder.Services.AddValidatorsFromAssembly(typeof(Program).Assembly);
-builder.Services.AddScoped(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<ApplicationContext>(options =>
@@ -101,7 +94,15 @@ builder.Services.AddDbContext<ApplicationContext>(options =>
 
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IEmailSender, MailKitEmailSender>();
-builder.Services.AddScoped<IHashingService, HashingService>();
+builder.Services.AddScoped<IHashingService, HashingService>();  
+builder.Services.AddAutoMapper(cfg =>
+{
+    cfg.AddProfile<UserMapper>();
+    cfg.AddProfile<UniversityMapper>();
+    cfg.AddProfile<ItemProfile>();
+}, typeof(UserMapper), typeof(UniversityMapper), typeof(ItemProfile));
+builder.Services.AddValidatorsFromAssembly(typeof(Program).Assembly);
+builder.Services.AddScoped(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 
 builder.Services.AddScoped<IUserValidator<User>, EmailValidator>();
 builder.Services.AddScoped<CreateBookingHandler>();
@@ -119,7 +120,7 @@ if (app.Environment.IsDevelopment())
     (c =>
         {
             c.SwaggerEndpoint("/swagger/v1/swagger.json", "UniShare API V1");
-            c.RoutePrefix = string.Empty; 
+            c.RoutePrefix = string.Empty; // Set Swagger UI at app's root
             c.DisplayRequestDuration();
         }
     );
@@ -130,38 +131,83 @@ if (app.Environment.IsDevelopment())
 app.UseAuthentication();
 app.UseAuthorization();
 
+/// Auth Endpoints
+
 app.MapPost("/login", async (LoginUserDto dto, IMediator mediator) => 
-    await mediator.Send(new LoginUserRequest(dto.Email, dto.Password)));
+    await mediator.Send(new LoginUserRequest(dto.Email, dto.Password)))
+    .WithTags("Auth");
+
 app.MapPost("/refresh", async (RefreshTokenDto dto, IMediator mediator) => 
-    await mediator.Send(new RefreshTokenRequest(dto.RefreshToken)));
+    await mediator.Send(new RefreshTokenRequest(dto.RefreshToken)))
+    .WithTags("Auth");
+
 app.MapPost("/register", async (RegisterUserDto dto, IMediator mediator) => 
-    await mediator.Send(new RegisterUserRequest(dto.Email, dto.FirstName, dto.LastName, dto.Password)));
-app.MapPost("/auth/send-verification-code", async (SendEmailVerificationDto dto, IMediator mediator) => 
-    await mediator.Send(new SendEmailVerificationRequest(dto.UserId)));
-app.MapPost("/auth/confirm-email", async (ConfirmEmailDto dto, IMediator mediator) => 
-    await mediator.Send(new ConfirmEmailRequest(dto.UserId, dto.Code)));
+    await mediator.Send(new RegisterUserRequest(dto)))
+    .WithTags("Auth");
 
-app.MapGet("/users", async (IMediator mediator) => await mediator.Send(new GetAllUsersRequest()));
-app.MapGet("/users/{userId:guid}", async (Guid userId, IMediator mediator) => await mediator.Send(new GetUserRequest(userId)));
+app.MapPost("/auth/verification-code", async (SendEmailVerificationDto dto, IMediator mediator) => 
+    await mediator.Send(new SendEmailVerificationRequest(dto.UserId)))
+    .WithTags("Auth");
+
+app.MapPost("/auth/email-confirmation", async (ConfirmEmailDto dto, IMediator mediator) => 
+    await mediator.Send(new ConfirmEmailRequest(dto.jwt, dto.Code)))
+    .WithTags("Auth");
+
+/// Users Endpoints
+
+app.MapGet("/users", async (IMediator mediator) => 
+    await mediator.Send(new GetAllUsersRequest()))
+    .WithTags("Users");
+
+app.MapGet("/users/{userId:guid}", async (Guid userId, IMediator mediator) => 
+    await mediator.Send(new GetUserRequest(userId)))
+    .WithTags("Users");
+
 app.MapGet("/users/{userId:guid}/refresh-tokens", async (Guid userId, IMediator mediator) => 
-    await mediator.Send(new GetRefreshTokensRequest(userId)));
-app.MapGet("users/{userId:guid}/items", async (Guid userId, IMediator mediator) => 
-    await mediator.Send(new GetAllUserItemsRequest(userId)));
-app.MapGet("users/{userId:guid}/items/{itemId:guid}", async (Guid userId, Guid itemId, IMediator mediator) => 
-    await mediator.Send(new GetUserItemRequest(userId, itemId)));
-app.MapGet("users/{userId:guid}/bookings", async (Guid userId, IMediator mediator) => 
-    await mediator.Send(new GetUserBookingsRequest(userId)));
-app.MapGet("users/{userId:guid}/booked-items", async (Guid userId, IMediator mediator) => 
-    await mediator.Send(new  GetAllUserBookedItemsRequest(userId)));
-app.MapGet("users/{userId:guid}/booked-items/{bookingId:guid}", async (Guid userId, Guid bookingId, IMediator mediator) => 
-    await mediator.Send(new  GetUserBookedItemRequest(userId, bookingId)));
-app.MapDelete("/users/{userId:guid}", async (Guid userId, IMediator mediator) => 
-    await mediator.Send(new DeleteUserRequest(userId)));
+    await mediator.Send(new GetRefreshTokensRequest(userId)))
+    .WithTags("Users");
 
-app.MapGet("/items", async (IMediator mediator) => await mediator.Send(new GetAllItemsRequest()));
-app.MapGet("items/{id:guid}", async (Guid id, IMediator mediator) => await mediator.Send(new GetItemRequest(id)));
-app.MapPost("items", async (PostItemRequest request, IMediator mediator) =>  await mediator.Send(request));
-app.MapDelete("items/{id:guid}", async (Guid id, IMediator mediator) => await mediator.Send(new DeleteItemRequest(id)));
+app.MapDelete("/users/{userId:guid}", async (Guid userId, IMediator mediator) => 
+    await mediator.Send(new DeleteUserRequest(userId)))
+    .WithTags("Users");
+
+app.MapGet("/users/{userId:guid}/items", async (Guid userId, IMediator mediator) => 
+    await mediator.Send(new GetAllUserItemsRequest(userId)))
+    .WithTags("Users");
+
+app.MapGet("/users/{userId:guid}/items/{itemId:guid}", async (Guid userId, Guid itemId, IMediator mediator) => 
+    await mediator.Send(new GetUserItemRequest(userId, itemId)))
+    .WithTags("Users");
+
+/// Items Endpoints
+
+app.MapGet("/items", async (IMediator mediator) => 
+    await mediator.Send(new GetAllItemsRequest()))
+    .WithTags("Items");
+
+app.MapGet("items/{id:guid}", async (Guid id, IMediator mediator) => 
+    await mediator.Send(new GetItemRequest(id)))
+    .WithTags("Items");
+
+app.MapPost("/items", async (PostItemRequest request, IMediator mediator) =>  
+    await mediator.Send(request))
+    .WithTags("Items");
+
+app.MapDelete("/items/{id:guid}", async (Guid id, IMediator mediator) => 
+    await mediator.Send(new DeleteItemRequest(id)))
+    .WithTags("Items");
+
+/// Universities Endpoints
+app.MapGet("/universities", async (IMediator mediator) => 
+        await mediator.Send(new GetAllUniversitiesRequest()))
+    .WithTags("Universities") 
+    .WithName("GetUniversities");
+
+app.MapPost("/universities", async (PostUniversitiesRequest request, IMediator mediator) => 
+        await mediator.Send(request))
+    .WithTags("Universities");
+
+/// Bookings Endpoints
 
 app.MapGet("/bookings", async (IMediator mediator) => await mediator.Send(new GetAllBookingsRequest()));
 app.MapGet("/bookings/{id:guid}", async (Guid id, IMediator mediator) => await mediator.Send(new GetBookingRequest(id)));
@@ -172,3 +218,5 @@ app.MapPatch("/bookings/{id:guid}", async (Guid id, UpdateBookingStatusDto booki
 app.MapDelete("/bookings/{id:guid}", async (Guid id, IMediator mediator) => await mediator.Send(new DeleteBookingRequest(id)));
 
 await app.RunAsync();
+
+public partial class Program { }

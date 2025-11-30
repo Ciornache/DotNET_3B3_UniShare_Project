@@ -1,4 +1,5 @@
 ﻿using Backend.Features.Bookings;
+using Backend.Features.Bookings.Enums;
 using FluentValidation;
 using Backend.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -9,10 +10,7 @@ public class UpdateBookingStatusValidator : AbstractValidator<UpdateBookingStatu
 {
     private readonly ApplicationContext dbContext;
     private readonly ILogger<UpdateBookingStatusValidator> logger;
-
-    //mbby un enum
-    private static readonly HashSet<string> AllowedStatuses = new() { "Pending", "Approved", "Rejected", "Completed", "Canceled" };
-
+    
     public UpdateBookingStatusValidator(ApplicationContext dbContext, ILogger<UpdateBookingStatusValidator> logger)
     {
 
@@ -20,10 +18,6 @@ public class UpdateBookingStatusValidator : AbstractValidator<UpdateBookingStatu
         this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
         RuleFor(r => r.BookingStatusDto).NotNull().WithMessage("Request body is required.");
-
-        RuleFor(r => r.BookingStatusDto.Status)
-            .NotEmpty().WithMessage("Status is required.")
-            .Must(s => AllowedStatuses.Contains(s)).WithMessage($"Status must be one of: {string.Join(", ", AllowedStatuses)}");
 
         RuleFor(r => r.BookingId)
             .NotEmpty().WithMessage("BookingId is required.");
