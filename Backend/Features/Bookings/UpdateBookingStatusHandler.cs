@@ -2,6 +2,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Backend.Features.Bookings.DTO;
+using Backend.Features.Bookings.Enums;
 
 namespace Backend.Features.Bookings;
 
@@ -25,9 +26,9 @@ public class UpdateBookingStatusHandler(ApplicationContext dbContext, ILogger<Up
             return Results.NotFound();
         }
 
-        booking.Status = dto.Status;
-        if (dto.Status == "Approved") booking.ApprovedOn = DateTime.UtcNow;
-        if (dto.Status == "Completed") booking.CompletedOn = DateTime.UtcNow;
+        booking.BookingStatus = dto.BookingStatus;
+        if (dto.BookingStatus == BookingStatus.Approved) booking.ApprovedOn = DateTime.UtcNow;
+        if (dto.BookingStatus == BookingStatus.Completed) booking.CompletedOn = DateTime.UtcNow;
 
         await dbContext.SaveChangesAsync(cancellationToken);
 
@@ -40,13 +41,13 @@ public class UpdateBookingStatusHandler(ApplicationContext dbContext, ILogger<Up
             booking.RequestedOn,
             booking.StartDate,
             booking.EndDate,
-            booking.Status,
+            booking.BookingStatus,
             booking.ApprovedOn,
             booking.CompletedOn,
             itemDto
         );
 
-        logger.LogInformation("Booking with ID {BookingId} status updated to {NewStatus}.", request.BookingId, dto.Status);
+        logger.LogInformation("Booking with ID {BookingId} status updated to {NewStatus}.", request.BookingId, dto.BookingStatus);
         return Results.Ok(bookingDto);
     }
 }
