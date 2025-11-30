@@ -78,14 +78,14 @@ public class TokenServiceTests
     public void Given_JwtSettingsWithExpiryMinutes_When_GetAccessTokenExpirationInSeconds_Then_ReturnsConfiguredSeconds()
     {
         // Arrange
-        var configuration = CrateInMemoryConfiguration(); // ExpiryMinutes = 60
+        var configuration = CrateInMemoryConfiguration(); // Expire = 900
         var tokenService = new TokenService(configuration);
 
         // Act
         var seconds = tokenService.GetAccessTokenExpirationInSeconds();
 
         // Assert
-        Assert.Equal(60 * 60, seconds);
+        Assert.Equal(30 * 30, seconds);
     }
 
     [Fact]

@@ -1,6 +1,4 @@
-﻿﻿using Backend.Features.Items.Enums;
-
-namespace Backend.Tests.Handlers.Items;
+﻿using Backend.Features.Items.Enums;
 
 using Backend.Data;
 using Backend.Features.Items;
@@ -8,7 +6,8 @@ using Backend.Persistence;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
-using Xunit;
+
+namespace Backend.Tests.Handlers.Items;
 
 public class DeleteItemHandlerTests
 {
