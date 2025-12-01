@@ -24,7 +24,7 @@ jobs:
         dotnet-version: 8.0.x
         
     - name: Restore dependencies
-      run: dotnet restore Backend. csproj
+      run: dotnet restore Backend.csproj
       
     - name: Build
       run: dotnet build Backend.csproj --no-restore
