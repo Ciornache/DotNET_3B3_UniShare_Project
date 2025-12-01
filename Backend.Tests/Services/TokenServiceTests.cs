@@ -38,9 +38,10 @@ public class TokenServiceTests
             Id = Guid.Parse("cb397a9b-ec7c-4bb4-b683-363f07dd94d6"),
             Email = "email@student.uaic.ro",
         };
+        List<string> roles = new List<string>{}; // No roles needed for this test
         
         // Act
-        var token = tokenService.GenerateToken(user);
+        var token = tokenService.GenerateToken(user, roles);
         var handler = new JwtSecurityTokenHandler();
         var jwtToken = handler.ReadJwtToken(token);
         var userIdClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Sub);

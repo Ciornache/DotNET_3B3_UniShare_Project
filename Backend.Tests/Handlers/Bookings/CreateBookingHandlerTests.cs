@@ -48,8 +48,7 @@ public class CreateBookingHandlerTests
         // Arrange
         var context = CreateInMemoryDbContext("b1c2d3e4-f5a6-7b8c-9d0e-f1a2b3c4d5e6");
         var mapper = CreateMapper();
-        var logger = new Mock<ILogger<CreateBookingHandler>>().Object;
-        var handler = new CreateBookingHandler(context, mapper, logger);
+        var handler = new CreateBookingHandler(context, mapper);
         var userId = Guid.Parse("12345678-1234-1234-1234-1234567890ab");
         var itemId = Guid.Parse("abcdefab-cdef-abcd-efab-cdefabcdefab");
 

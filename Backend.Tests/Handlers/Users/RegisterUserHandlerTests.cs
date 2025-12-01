@@ -150,7 +150,7 @@ public class RegisterUserHandlerTests
         var statusResult = result.Should().BeAssignableTo<IStatusCodeHttpResult>().Subject;
         statusResult.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
     }
-    
+
     private static ApplicationContext CreateInMemoryDbContext(string guid)
     {
         var options = new DbContextOptionsBuilder<ApplicationContext>()
@@ -160,6 +160,4 @@ public class RegisterUserHandlerTests
         var context = new ApplicationContext(options);
         return context;
     }
-  
-
 }
