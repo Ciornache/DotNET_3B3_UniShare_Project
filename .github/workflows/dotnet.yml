@@ -1,4 +1,4 @@
-name: .NET
+name: . NET
 
 on:
   push:
@@ -24,10 +24,10 @@ jobs:
         dotnet-version: 8.0.x
         
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore Backend. csproj
       
     - name: Build
-      run: dotnet build --no-restore
+      run: dotnet build Backend.csproj --no-restore
       
     - name: Test
-      run: dotnet test --no-build --verbosity normal
+      run: dotnet test Backend.csproj --no-build --verbosity normal
