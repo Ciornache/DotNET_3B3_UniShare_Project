@@ -2,7 +2,7 @@
 using Backend.Data;
 using Backend.Features.Users.Dtos;
 
-namespace Backend.Mappers;
+namespace Backend.Mapping;
 
 public class UserMapper : Profile
 {

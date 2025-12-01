@@ -1,29 +1,46 @@
 ﻿using AutoMapper;
-using Backend.Data;
-using Backend.Features.Booking.DTO;
-using Backend.Validators;
-using FluentValidation.Results;
-using Microsoft.EntityFrameworkCore;
-using System.Linq;
 using Backend.Persistence;
 using MediatR;
+using Serilog;
+using Microsoft.EntityFrameworkCore;
+using ILogger = Serilog.ILogger;
 
 namespace Backend.Features.Booking;
 
-public class CreateBookingHandler(ApplicationContext dbContext, IMapper mapper,  ILogger<CreateBookingHandler> logger) : IRequestHandler<CreateBookingRequest, IResult>
+public class CreateBookingHandler(ApplicationContext dbContext, IMapper mapper) : IRequestHandler<CreateBookingRequest, IResult>
 {
+    private readonly ILogger _logger = Log.ForContext<CreateBookingHandler>();
+
     public async Task<IResult> Handle(CreateBookingRequest? request, CancellationToken cancellationToken)
     {
-       // Nota Bianca: nu inteleg de ce trebuie folosit Data.Booking desi am important Backend.Data
+        _logger.Information("Creating booking for item {ItemId}", request.Booking.ItemId);
+        
         var booking = mapper.Map<Data.Booking>(request.Booking);
         
         if (booking.Id == Guid.Empty)
+        {
             booking.Id = Guid.NewGuid();
+        }
 
-        dbContext.Bookings.Add(booking);
-        await dbContext.SaveChangesAsync(cancellationToken);
-
-        logger.LogInformation("Booking created");
-        return Results.Created($"/bookings/{booking.Id}", booking);
+        try
+        {
+            dbContext.Bookings.Add(booking);
+            await dbContext.SaveChangesAsync(cancellationToken);
+            
+            _logger.Information("Booking {BookingId} created successfully for item {ItemId}", 
+                booking.Id, booking.ItemId);
+                
+            return Results.Created($"/bookings/{booking.Id}", booking);
+        }
+        catch (DbUpdateException ex)
+        {
+            _logger.Error(ex, "Database error while creating booking for item {ItemId}", request.Booking.ItemId);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Unexpected error while creating booking for item {ItemId}", request.Booking.ItemId);
+            throw;
+        }
     }
 }
