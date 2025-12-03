@@ -3,7 +3,7 @@ namespace Backend.Tests.APITest;
 public class ItemsApiTest(CustomWebApplicationFactory factory) : IClassFixture<CustomWebApplicationFactory>
 {
     private readonly HttpClient client = factory.CreateClient();
-
+    
     [Fact]
     public async Task GetAllItems_ReturnsSuccessStatusCode()
     {

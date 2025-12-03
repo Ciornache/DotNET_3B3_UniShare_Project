@@ -3,7 +3,7 @@ using Backend.Data;
 using Backend.Features.Items.DTO;
 using Backend.Features.Items.Enums;
 
-namespace Backend.Mapper;
+namespace Backend.Mapping;
 
 public class ItemProfile:Profile
 {

@@ -51,7 +51,7 @@ public class BookingsApiTest(CustomWebApplicationFactory factory) : IClassFixtur
         var response = await client.SendAsync(request);
         
         // Assert
-        Assert.Equal(System.Net.HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(System.Net.HttpStatusCode.Unauthorized, response.StatusCode);
     }
     
 }

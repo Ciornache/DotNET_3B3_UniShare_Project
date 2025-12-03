@@ -63,7 +63,8 @@ public class ConfirmEmailHandlerTests
         var userId = Guid.NewGuid();
         
         var userForToken = new User { Id = userId, Email = "test@example.com" };
-        var token = _tokenService.GenerateToken(userForToken);
+        List<string> roles = new List<string>{}; // No roles needed for this test
+        var token = _tokenService.GenerateToken(userForToken, roles);
         
         _userManagerMock.Setup(x => x.FindByIdAsync(userId.ToString()))
             .ReturnsAsync((User)null);
@@ -90,7 +91,8 @@ public class ConfirmEmailHandlerTests
         var userId = Guid.NewGuid();
         var user = new User { Id = userId, Email = "test@example.com", EmailConfirmed = false };
         
-        var jwtToken = _tokenService.GenerateToken(user);
+        List<string> roles = new List<string>{}; // No roles needed for this test
+        var jwtToken = _tokenService.GenerateToken(user, roles);
         
         var inputCode = "123456";
         var expectedHash = "hashed_123456";
@@ -131,7 +133,8 @@ public class ConfirmEmailHandlerTests
         // Arrange
         var userId = Guid.NewGuid();
         var user = new User { Id = userId, Email = "test@example.com", EmailConfirmed = false };
-        var token = _tokenService.GenerateToken(user);
+        List<string> roles = new List<string>{}; // No roles needed for this test
+        var token = _tokenService.GenerateToken(user, roles);
         
         var inputCode = "123456";
         var wrongHash = "wrong_hash";
