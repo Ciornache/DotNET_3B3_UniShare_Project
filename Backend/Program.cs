@@ -372,6 +372,16 @@ reviewsGroup.MapPost("", async (CreateReviewDTO dto, IMediator mediator) =>
     .WithDescription("Create a new review")
     .RequireEmailVerification();
 
+reviewsGroup.MapGet("", async (IMediator mediator) =>
+        await mediator.Send(new GetAllReviewsRequest()))
+    .WithDescription("Get all reviews")
+    .AllowAnonymous();
+
+reviewsGroup.MapGet("/{id:guid}", async (Guid id, IMediator mediator) =>
+        await mediator.Send(new GetReviewRequest(id)))
+    .WithDescription("Get a specific review by ID")
+    .AllowAnonymous();
+
 // Log the URLs where the application is listening
 
 Log.Information("UniShare API started successfully");
