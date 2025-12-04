@@ -22,6 +22,8 @@ using MediatR;
 using FluentValidation.AspNetCore;
 using Backend.Features.Bookings;
 using Backend.Features.Bookings.DTO;
+using Backend.Features.Review;
+using Backend.Features.Review.DTO;
 using Backend.Mapping;
 using Serilog;
 
@@ -147,8 +149,8 @@ builder.Services.AddAutoMapper(cfg =>
 {
     cfg.AddProfile<UserMapper>();
     cfg.AddProfile<UniversityMapper>();
-    cfg.AddProfile<ItemProfile>();
-}, typeof(UserMapper), typeof(UniversityMapper), typeof(ItemProfile));
+    cfg.AddProfile<ItemMapper>();
+}, typeof(UserMapper), typeof(UniversityMapper), typeof(ItemMapper));
 builder.Services.AddValidatorsFromAssembly(typeof(Program).Assembly);
 builder.Services.AddScoped(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 
@@ -360,6 +362,15 @@ bookingVerifiedGroup.MapPatch("/{id:guid}",
 bookingVerifiedGroup.MapDelete("/{id:guid}", async (Guid id, IMediator mediator) =>
         await mediator.Send(new DeleteBookingRequest(id)))
     .WithDescription("Delete a booking");
+
+var reviewsGroup = app.MapGroup("/reviews")
+    .WithTags("Reviews")
+    .RequireAuthorization();
+
+reviewsGroup.MapPost("", async (CreateReviewDTO dto, IMediator mediator) =>
+        await mediator.Send(new CreateReviewRequest(dto)))
+    .WithDescription("Create a new review")
+    .RequireEmailVerification();
 
 // Log the URLs where the application is listening
 
