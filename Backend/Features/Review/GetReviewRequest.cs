@@ -1,3 +1,5 @@
-﻿namespace Backend.Features.Review;
+﻿using MediatR;
 
-public record GetReviewRequest(Guid Id);
+namespace Backend.Features.Review;
+
+public record GetReviewRequest(Guid Id) : IRequest<IResult>;
