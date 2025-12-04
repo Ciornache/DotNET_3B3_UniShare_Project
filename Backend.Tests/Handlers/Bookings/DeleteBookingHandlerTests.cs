@@ -30,7 +30,7 @@ public class DeleteBookingHandlerTests
         var logger = new Mock<ILogger<DeleteBookingHandler>>().Object;
         var handler = new DeleteBookingHandler(context,logger);
         var bookingId = Guid.Parse("12345678-1234-1234-1234-1234567890a5");
-        var booking = new Booking { Id = bookingId, ItemId = Guid.NewGuid(), BorrowerId = Guid.NewGuid(), StartDate = DateTime.UtcNow, EndDate = DateTime.UtcNow.AddDays(1) };
+        var booking = new Booking { Id = bookingId, ItemId = Guid.Parse("12345678-1234-1234-1234-123456789077"), BorrowerId = Guid.Parse("12345678-1234-1234-1234-123456789078"), StartDate = DateTime.UtcNow, EndDate = DateTime.UtcNow.AddDays(1) };
         context.Bookings.Add(booking);
         await context.SaveChangesAsync();
 

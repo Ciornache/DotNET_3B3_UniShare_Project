@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 
 namespace Backend.Tests.APITest;
 
@@ -14,6 +15,8 @@ namespace Backend.Tests.APITest;
 /// </summary>
 public class CustomWebApplicationFactory : WebApplicationFactory<Program>
 {
+    public string HostUrl { get; set; } = "https://localhost:5001"; // we can use any free port
+    
     public CustomWebApplicationFactory()
     {
         Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Testing");
@@ -26,6 +29,8 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
     /// </summary>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        builder.UseUrls(HostUrl);
+        
         builder.UseEnvironment("Testing");
         
         builder.ConfigureServices(services =>
@@ -37,7 +42,7 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
 
             services.AddDbContext<ApplicationContext>(options =>
             {
-                options.UseInMemoryDatabase("InMemoryDbForTesting");
+                options.UseInMemoryDatabase(Guid.NewGuid().ToString());
             });
 
         });
