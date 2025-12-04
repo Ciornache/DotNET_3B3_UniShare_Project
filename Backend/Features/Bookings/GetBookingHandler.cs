@@ -5,16 +5,16 @@ namespace Backend.Features.Booking;
 
 public class GetBookingHandler(ApplicationContext dbContext, ILogger<GetBookingHandler> logger) : IRequestHandler<GetBookingRequest, IResult>
 {
-    public Task<IResult> Handle(GetBookingRequest request, CancellationToken cancellationToken)
+    public async Task<IResult> Handle(GetBookingRequest request, CancellationToken cancellationToken)
     {
-        var booking = dbContext.Bookings.Find(request.BookingId);
+        var booking = dbContext.Bookings.FindAsync(request.BookingId);
         if (booking == null)
         {
             logger.LogError("Booking with ID {BookingId} not found.", request.BookingId);
-            return Task.FromResult(Results.NotFound());
+            return Results.NotFound();
         }
         
         logger.LogInformation("Booking with ID {BookingId} was found.", request.BookingId);
-        return Task.FromResult(Results.Ok(booking));
+        return Results.Ok(booking);
     }
 }
