@@ -1,7 +1,6 @@
 ﻿using Backend.Features.Booking.DTO;
 using Backend.Persistence;
 using MediatR;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Features.Booking;
