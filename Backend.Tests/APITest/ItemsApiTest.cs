@@ -1,16 +1,29 @@
+using System.Runtime.InteropServices;
+
 namespace Backend.Tests.APITest;
 
-public class ItemsApiTest(CustomWebApplicationFactory factory) : IClassFixture<CustomWebApplicationFactory>
+public class ItemsApiTest: IClassFixture<CustomWebApplicationFactory>
 {
-    private readonly HttpClient client = factory.CreateClient();
+    private CustomWebApplicationFactory _factory;
+    private readonly HttpClient _client;
     
+    private readonly string _webUrl = "https://localhost:7112";
+
+    public ItemsApiTest(CustomWebApplicationFactory factory)
+    {
+        _factory = factory;
+        _client = factory.CreateClient();
+        
+        _factory.HostUrl = _webUrl;
+    }
+
     [Fact]
     public async Task GetAllItems_ReturnsSuccessStatusCode()
     {
         // Arrange
         var request = new HttpRequestMessage(HttpMethod.Get, "/items");
         // Act
-        var response = await client.SendAsync(request);
+        var response = await _client.SendAsync(request);
         // Assert
         response.EnsureSuccessStatusCode();
     }
@@ -21,7 +34,7 @@ public class ItemsApiTest(CustomWebApplicationFactory factory) : IClassFixture<C
         // Arrange
         var request = new HttpRequestMessage(HttpMethod.Get, "/items");
         // Act
-        var response = await client.SendAsync(request);
+        var response = await _client.SendAsync(request);
         // Assert
         response.EnsureSuccessStatusCode();
         var contentType = response.Content.Headers.ContentType?.MediaType;
