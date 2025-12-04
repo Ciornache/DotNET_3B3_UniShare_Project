@@ -1,4 +1,4 @@
-name: . NET
+name: .NET
 
 on:
   push:
@@ -23,10 +23,18 @@ jobs:
       run: dotnet restore Backend.csproj
       working-directory: ./Backend
       
-    - name: Build
-      run: dotnet build Backend.csproj --no-restore
+    - name: Build Backend
+      run: dotnet build Backend.csproj --no-restore --configuration Release
       working-directory: ./Backend
       
-    - name: Test
-      run: dotnet test Backend.Tests.csproj --no-build --verbosity normal
+    - name: Build Tests
+      run: dotnet build Backend.Tests.csproj --configuration Release
       working-directory: ./Backend.Tests
+      
+    - name: Run Tests
+      run: dotnet test Backend.Tests.csproj --no-build --configuration Release --verbosity normal
+      working-directory: ./Backend.Tests
+      
+    - name: Verify App Can Run
+      run: timeout 30s dotnet run --no-build --configuration Release --project Backend.csproj || code=$?; if [ $code -ne 0 ] && [ $code -ne 124 ]; then exit $code; fi
+      working-directory: ./Backend
