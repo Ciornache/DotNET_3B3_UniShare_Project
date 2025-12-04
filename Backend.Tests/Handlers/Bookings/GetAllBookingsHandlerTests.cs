@@ -26,7 +26,6 @@ public class GetAllBookingsHandlerTests
     {
         // Arrange
         var context = CreateInMemoryDbContext("get-all-bookings-test-db");
-        var logger = new Mock<ILogger<GetAllBookingsHandler>>().Object;
         
         var booking1 = new Booking
         {
@@ -49,7 +48,7 @@ public class GetAllBookingsHandlerTests
         context.Bookings.AddRange(booking1, booking2);
         await context.SaveChangesAsync();
         
-        var handler = new GetAllBookingsHandler(context, logger);
+        var handler = new GetAllBookingsHandler(context);
         var request = new GetAllBookingsRequest();
         
         // Act
@@ -72,9 +71,8 @@ public class GetAllBookingsHandlerTests
     {
         // Arrange
         var context = CreateInMemoryDbContext("get-all-bookings-empty-test-db");
-        var logger = new Mock<ILogger<GetAllBookingsHandler>>().Object;
         
-        var handler = new GetAllBookingsHandler(context, logger);
+        var handler = new GetAllBookingsHandler(context);
         var request = new GetAllBookingsRequest();
         
         // Act

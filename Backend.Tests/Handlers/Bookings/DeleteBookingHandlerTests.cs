@@ -51,8 +51,7 @@ public class DeleteBookingHandlerTests
     {
         // Arrange
         var context = CreateInMemoryDbContext("87654321-4321-4321-4321-ba0987654321");
-        var logger = new Mock<ILogger<DeleteBookingHandler>>().Object;
-        var handler = new DeleteBookingHandler(context,logger);
+        var handler = new DeleteBookingHandler(context);
         var request = new DeleteBookingRequest(Guid.NewGuid());
 
         // Act
