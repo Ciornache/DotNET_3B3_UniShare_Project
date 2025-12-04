@@ -31,6 +31,11 @@ namespace Backend.Migrations
                     b.Property<DateTime?>("ApprovedOn")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("BookingStatus")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
+
                     b.Property<Guid>("BorrowerId")
                         .HasColumnType("uuid");
 
@@ -48,11 +53,6 @@ namespace Backend.Migrations
 
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("varchar(50)");
 
                     b.Property<Guid?>("UserId")
                         .HasColumnType("uuid");
@@ -245,8 +245,7 @@ namespace Backend.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("BookingId")
-                        .IsUnique();
+                    b.HasIndex("BookingId");
 
                     b.HasIndex("ReviewerId");
 

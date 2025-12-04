@@ -1,9 +1,8 @@
 ﻿using AutoMapper;
 using Backend.Data;
 using Backend.Features.Universities.DTO;
-using Org.BouncyCastle.Asn1.Cms;
 
-namespace Backend.Mappers;
+namespace Backend.Mapping;
 
 public class UniversityMapper : Profile
 {

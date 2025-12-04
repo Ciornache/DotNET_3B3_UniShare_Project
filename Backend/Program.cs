@@ -7,30 +7,50 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.AspNetCore.Identity;
 using FluentValidation;
-
 using Backend.TokenGenerators;
 using Backend.Validators;
 using Backend.Services;
-
 using Backend.Data;
 using Backend.Features.Universities;
 using Backend.Features.Booking;
 using Backend.Features.Booking.DTO;
 using Backend.Features.Shared.Pipeline;
+using Backend.Features.Shared.Authorization;
 using Backend.Features.Users;
 using Backend.Features.Users.Dtos;
-using Backend.Mappers;
 using MediatR;
-
-using FluentValidation;
 using FluentValidation.AspNetCore;
-using AutoMapper;
 using Backend.Features.Bookings;
 using Backend.Features.Bookings.DTO;
-using Backend.Mapper;
+using Backend.Features.Review;
+using Backend.Features.Review.DTO;
 using Backend.Mapping;
+using Serilog;
+
+// Configure Serilog before building the application
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .MinimumLevel.Override("Microsoft", Serilog.Events.LogEventLevel.Warning)
+    .MinimumLevel.Override("Microsoft.AspNetCore", Serilog.Events.LogEventLevel.Warning)
+    .Enrich.FromLogContext()
+    .WriteTo.Console(
+        outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss}] [{Level:u3}] {Message:lj}{NewLine}{Exception}")
+    .WriteTo.File(
+        path: "logs/unishare-.log",
+        rollingInterval: RollingInterval.Day,
+        fileSizeLimitBytes: 10_485_760, // 10 MB
+        rollOnFileSizeLimit: true,
+        retainedFileCountLimit: 30,
+        outputTemplate:
+        "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff}] [{Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}")
+    .CreateLogger();
+
+Log.Information("Starting UniShare API application");
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Host.UseSerilog();
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -47,20 +67,42 @@ builder.Services.AddIdentity<User, IdentityRole<Guid>>()
 
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc
-    (
-        "v1",
-        new OpenApiInfo
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "UniShare API",
+        Version = "v1",
+        Description = "API for managing the UniShare application",
+        Contact = new OpenApiContact
         {
-            Title = "UniShare API",
-            Version = "v1",
-            Description = "API for managing the UniShare application",
-            Contact = new OpenApiContact
+            Name = "API Support",
+            Email = "support@example.com",
+        }
+    });
+
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "JWT Authorization header using the Bearer scheme."
+    });
+
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
             {
-                Name = "API Support",
-                Email = "support@example.com",
-            }
-        });
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
 });
 
 builder.Services.AddAuthentication(options =>
@@ -70,7 +112,8 @@ builder.Services.AddAuthentication(options =>
     })
     .AddJwtBearer(options =>
     {
-        var jwtKey = builder.Configuration["JwtSettings:Key"] ?? throw new InvalidOperationException("Configuration value 'JwtSettings:Key' is missing.");
+        var jwtKey = builder.Configuration["JwtSettings:Key"] ??
+                     throw new InvalidOperationException("Configuration value 'JwtSettings:Key' is missing.");
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
@@ -88,7 +131,12 @@ builder.Services.AddAuthorization();
 builder.Services.AddOpenApi();
 builder.Services.AddEndpointsApiExplorer();
 
-builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
+builder.Services.AddMediatR(cfg =>
+{
+    cfg.RegisterServicesFromAssembly(typeof(Program).Assembly);
+    // Add logging behavior to MediatR pipeline
+    cfg.AddOpenBehavior(typeof(LoggingBehavior<,>));
+});
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<ApplicationContext>(options =>
@@ -101,8 +149,8 @@ builder.Services.AddAutoMapper(cfg =>
 {
     cfg.AddProfile<UserMapper>();
     cfg.AddProfile<UniversityMapper>();
-    cfg.AddProfile<ItemProfile>();
-}, typeof(UserMapper), typeof(UniversityMapper), typeof(ItemProfile));
+    cfg.AddProfile<ItemMapper>();
+}, typeof(UserMapper), typeof(UniversityMapper), typeof(ItemMapper));
 builder.Services.AddValidatorsFromAssembly(typeof(Program).Assembly);
 builder.Services.AddScoped(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 
@@ -114,6 +162,31 @@ builder.Services.AddValidatorsFromAssemblyContaining<UpdateBookingStatusRequest>
 builder.Services.AddFluentValidationAutoValidation();
 
 var app = builder.Build();
+
+// Initialize roles and seed database
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    var context = services.GetRequiredService<ApplicationContext>();
+    var userManager = services.GetRequiredService<UserManager<User>>();
+    var roleManager = services.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
+
+    // Apply pending migrations
+    if (context.Database.IsRelational())
+    {
+        // If we run the app normally, apply migrations
+        await context.Database.MigrateAsync();
+    }
+    else
+    {
+        // If we run the tests with InMemory database, ensure created
+        await context.Database.EnsureCreatedAsync();
+    }
+
+    // Seed the database
+    await DatabaseSeeder.SeedAsync(context, userManager, roleManager);
+}
+
 app.UseCors("AllowAll");
 if (app.Environment.IsDevelopment())
 {
@@ -122,7 +195,7 @@ if (app.Environment.IsDevelopment())
     (c =>
         {
             c.SwaggerEndpoint("/swagger/v1/swagger.json", "UniShare API V1");
-            c.RoutePrefix = string.Empty; 
+            c.RoutePrefix = string.Empty; // Set Swagger UI at app's root
             c.DisplayRequestDuration();
         }
     );
@@ -133,92 +206,198 @@ if (app.Environment.IsDevelopment())
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapPost("/login", async (LoginUserDto dto, IMediator mediator) => 
-    await mediator.Send(new LoginUserRequest(dto.Email, dto.Password)))
+/// Auth Endpoints - Anonymous access
+var authGroup = app.MapGroup("/auth")
     .WithTags("Auth");
 
-app.MapPost("/refresh", async (RefreshTokenDto dto, IMediator mediator) => 
-    await mediator.Send(new RefreshTokenRequest(dto.RefreshToken)))
-    .WithTags("Auth");
+authGroup.MapPost("/verification-code", async (SendEmailVerificationDto dto, IMediator mediator) =>
+        await mediator.Send(new SendEmailVerificationRequest(dto.UserId)))
+    .RequireAuthorization()
+    .AllowAdmin()
+    .RequireOwner();
 
-app.MapPost("/register", async (RegisterUserDto dto, IMediator mediator) => 
-    await mediator.Send(new RegisterUserRequest(dto)))
-    .WithTags("Auth");
+authGroup.MapPost("/email-confirmation", async (ConfirmEmailDto dto, IMediator mediator) =>
+        await mediator.Send(new ConfirmEmailRequest(dto.jwt, dto.Code)))
+    .AllowAnonymous();
 
-app.MapPost("/auth/verification-code", async (SendEmailVerificationDto dto, IMediator mediator) =>
-    await mediator.Send(new SendEmailVerificationRequest(dto.UserId)))
-    .WithTags("Auth");
+// Root auth endpoints (not nested under /auth/)
+app.MapPost("/login", async (LoginUserDto dto, IMediator mediator) =>
+        await mediator.Send(new LoginUserRequest(dto.Email, dto.Password)))
+    .WithTags("Auth")
+    .AllowAnonymous();
 
-app.MapPost("/auth/email-confirmation", async (ConfirmEmailDto dto, IMediator mediator) =>
-    await mediator.Send(new ConfirmEmailRequest(dto.jwt, dto.Code)))
-    .WithTags("Auth");
+app.MapPost("/refresh", async (RefreshTokenDto dto, IMediator mediator) =>
+        await mediator.Send(new RefreshTokenRequest(dto.RefreshToken)))
+    .WithTags("Auth")
+    .AllowAnonymous();
+
+app.MapPost("/register", async (RegisterUserDto dto, IMediator mediator) =>
+        await mediator.Send(new RegisterUserRequest(dto)))
+    .WithTags("Auth")
+    .AllowAnonymous();
 
 /// Users Endpoints
+var usersGroup = app.MapGroup("/users")
+    .WithTags("Users")
+    .RequireAuthorization();
 
-app.MapGet("/users", async (IMediator mediator) =>
-    await mediator.Send(new GetAllUsersRequest()))
-    .WithTags("Users");
+// Admin only - list all users
+usersGroup.MapGet("", async (IMediator mediator) =>
+        await mediator.Send(new GetAllUsersRequest()))
+    .RequireAdmin();
 
-app.MapGet("/users/{userId:guid}", async (Guid userId, IMediator mediator) =>
-    await mediator.Send(new GetUserRequest(userId)))
-    .WithTags("Users");
+// User-specific routes that require owner or admin
+var userByIdGroup = usersGroup.MapGroup("/{userId:guid}")
+    .AllowAdmin();
 
-app.MapGet("/users/{userId:guid}/refresh-tokens", async (Guid userId, IMediator mediator) => 
-    await mediator.Send(new GetRefreshTokensRequest(userId)))
-    .WithTags("Users");
+userByIdGroup.MapGet("", async (Guid userId, IMediator mediator) =>
+        await mediator.Send(new GetUserRequest(userId)))
+    .RequireOwner();
 
-app.MapDelete("/users/{userId:guid}", async (Guid userId, IMediator mediator) =>
-    await mediator.Send(new DeleteUserRequest(userId)))
-    .WithTags("Users");
+userByIdGroup.MapGet("/refresh-tokens", async (Guid userId, IMediator mediator) =>
+        await mediator.Send(new GetRefreshTokensRequest(userId)))
+    .RequireOwner();
 
-app.MapGet("/users/{userId:guid}/items", async (Guid userId, IMediator mediator) =>
-    await mediator.Send(new GetAllUserItemsRequest(userId)))
-    .WithTags("Users");
+userByIdGroup.MapDelete("", async (Guid userId, IMediator mediator) =>
+        await mediator.Send(new DeleteUserRequest(userId)))
+    .RequireOwner();
 
-app.MapGet("/users/{userId:guid}/items/{itemId:guid}", async (Guid userId, Guid itemId, IMediator mediator) =>
-    await mediator.Send(new GetUserItemRequest(userId, itemId)))
-    .WithTags("Users");
+userByIdGroup.MapPost("/assign-admin", async (Guid userId, IMediator mediator) =>
+        await mediator.Send(new AssignAdminRoleRequest(userId)))
+    .WithDescription("Assign admin role to a user (Admin only)")
+    .RequireAdmin();
+
+// User-specific routes that require owner + email verification (or admin)
+var userVerifiedGroup = usersGroup.MapGroup("/{userId:guid}")
+    .AllowAdmin()
+    .RequireOwner()
+    .RequireEmailVerification();
+
+userVerifiedGroup.MapGet("/items", async (Guid userId, IMediator mediator) =>
+    await mediator.Send(new GetAllUserItemsRequest(userId)));
+
+userVerifiedGroup.MapGet("/items/{itemId:guid}", async (Guid userId, Guid itemId, IMediator mediator) =>
+    await mediator.Send(new GetUserItemRequest(userId, itemId)));
+
+userVerifiedGroup.MapGet("/bookings", async (Guid userId, IMediator mediator) =>
+        await mediator.Send(new GetUserBookingsRequest(userId)))
+    .WithDescription("Get all bookings for a specific user");
+
+userVerifiedGroup.MapGet("/booked-items", async (Guid userId, IMediator mediator) =>
+        await mediator.Send(new GetAllUserBookedItemsRequest(userId)))
+    .WithDescription("Get all items booked by a specific user");
+
+userVerifiedGroup.MapGet("/booked-items/{bookingId:guid}", async (Guid userId, Guid bookingId, IMediator mediator) =>
+        await mediator.Send(new GetUserBookedItemRequest(userId, bookingId)))
+    .WithDescription("Get a specific booked item for a user");
 
 /// Items Endpoints
-
-app.MapGet("/items", async (IMediator mediator) =>
-    await mediator.Send(new GetAllItemsRequest()))
+var itemsGroup = app.MapGroup("/items")
     .WithTags("Items");
 
-app.MapGet("items/{id:guid}", async (Guid id, IMediator mediator) =>
-    await mediator.Send(new GetItemRequest(id)))
-    .WithTags("Items");
+itemsGroup.MapGet("", async (IMediator mediator) =>
+        await mediator.Send(new GetAllItemsRequest()))
+    .AllowAnonymous();
 
-app.MapPost("/items", async (PostItemRequest request, IMediator mediator) =>
-    await mediator.Send(request))
-    .WithTags("Items");
+itemsGroup.MapGet("/{id:guid}", async (Guid id, IMediator mediator) =>
+        await mediator.Send(new GetItemRequest(id)))
+    .AllowAnonymous();
 
-app.MapDelete("/items/{id:guid}", async (Guid id, IMediator mediator) =>
-    await mediator.Send(new DeleteItemRequest(id)))
-    .WithTags("Items");
+itemsGroup.MapPost("", async (PostItemRequest request, IMediator mediator) =>
+        await mediator.Send(request))
+    .RequireAuthorization()
+    .AllowAdmin()
+    .RequireEmailVerification();
+
+itemsGroup.MapDelete("/{id:guid}", async (Guid id, IMediator mediator) =>
+        await mediator.Send(new DeleteItemRequest(id)))
+    .RequireAuthorization()
+    .AllowAdmin()
+    .RequireEmailVerification();
 
 /// Universities Endpoints
-app.MapGet("/universities", async (IMediator mediator) =>
-        await mediator.Send(new GetAllUniversitiesRequest()))
-    .WithTags("Universities")
-    .WithName("GetUniversities");
-
-app.MapPost("/universities", async (PostUniversitiesRequest request, IMediator mediator) =>
-        await mediator.Send(request))
+var universitiesGroup = app.MapGroup("/universities")
     .WithTags("Universities");
 
+universitiesGroup.MapGet("", async (IMediator mediator) =>
+        await mediator.Send(new GetAllUniversitiesRequest()))
+    .WithName("GetUniversities")
+    .AllowAnonymous();
+
+universitiesGroup.MapPost("", async (PostUniversitiesRequest request, IMediator mediator) =>
+        await mediator.Send(request))
+    .RequireAuthorization()
+    .RequireAdmin();
+
 /// Bookings Endpoints
+var bookingsGroup = app.MapGroup("/bookings")
+    .WithTags("Bookings")
+    .RequireAuthorization();
 
-app.MapGet("/bookings", async (IMediator mediator) => await mediator.Send(new GetAllBookingsRequest()));
-app.MapGet("/bookings/{id:guid}", async (Guid id, IMediator mediator) => await mediator.Send(new GetBookingRequest(id)));
-app.MapPost( "/bookings", async (CreateBookingDto dto, IMediator mediator) =>
-    await mediator.Send(new CreateBookingRequest(dto)));
-app.MapPatch("/bookings/{id:guid}", async (Guid id, UpdateBookingStatusDto bookingStatusDto, IMediator mediator) =>
-    await mediator.Send(new UpdateBookingStatusRequest(id, bookingStatusDto)));
-app.MapDelete("/bookings/{id:guid}", async (Guid id, IMediator mediator) => await mediator.Send(new DeleteBookingRequest(id)));
+bookingsGroup.MapGet("", async (IMediator mediator) =>
+        await mediator.Send(new GetAllBookingsRequest()))
+    .WithDescription("Get all bookings in the system (Admin only)")
+    .RequireAdmin();
 
-app.MapGet("/auth/email-verified/{userId:guid}",
-    async (Guid userId, IMediator mediator) =>
-        await mediator.Send(new GetEmailVerifiedStatusRequest(userId)));
+// Booking operations requiring email verification (or admin)
+var bookingVerifiedGroup = app.MapGroup("/bookings")
+    .WithTags("Bookings")
+    .RequireAuthorization()
+    .AllowAdmin()
+    .RequireEmailVerification();
+
+bookingVerifiedGroup.MapGet("/{id:guid}", async (Guid id, IMediator mediator) =>
+        await mediator.Send(new GetBookingRequest(id)))
+    .WithDescription("Get a specific booking by ID");
+
+bookingVerifiedGroup.MapPost("", async (CreateBookingDto dto, IMediator mediator) =>
+        await mediator.Send(new CreateBookingRequest(dto)))
+    .WithDescription("Create a new booking");
+
+bookingVerifiedGroup.MapPatch("/{id:guid}",
+        async (Guid id, UpdateBookingStatusDto bookingStatusDto, IMediator mediator) =>
+            await mediator.Send(new UpdateBookingStatusRequest(id, bookingStatusDto)))
+    .WithDescription("Update the status of a booking");
+
+bookingVerifiedGroup.MapDelete("/{id:guid}", async (Guid id, IMediator mediator) =>
+        await mediator.Send(new DeleteBookingRequest(id)))
+    .WithDescription("Delete a booking");
+
+
+/// Reviews Endpoints
+var reviewsGroup = app.MapGroup("/reviews")
+    .WithTags("Reviews")
+    .RequireAuthorization();
+
+reviewsGroup.MapGet("", async (IMediator mediator) =>
+        await mediator.Send(new GetAllReviewsRequest()))
+    .WithDescription("Get all reviews")
+    .AllowAnonymous();
+
+reviewsGroup.MapGet("/{id:guid}", async (Guid id, IMediator mediator) =>
+        await mediator.Send(new GetReviewRequest(id)))
+    .WithDescription("Get a specific review by ID")
+    .AllowAnonymous();
+
+reviewsGroup.MapPost("", async (CreateReviewDTO dto, IMediator mediator) =>
+        await mediator.Send(new CreateReviewRequest(dto)))
+    .WithDescription("Create a new review")
+    .RequireEmailVerification();
+
+reviewsGroup.MapDelete("/{id:guid}", async (Guid id, IMediator mediator) =>
+    await mediator.Send(new DeleteReviewRequest(id)))
+    .WithDescription("Delete a review")
+    .RequireEmailVerification();
+
+// Log the URLs where the application is listening
+
+Log.Information("UniShare API started successfully");
+
+var url = "http://localhost:5083/index.html";
+Log.Information("Application is listening on: {Url}", url);
 
 await app.RunAsync();
+
+public partial class Program
+{
+}

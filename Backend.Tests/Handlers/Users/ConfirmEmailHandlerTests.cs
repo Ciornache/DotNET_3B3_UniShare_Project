@@ -14,14 +14,14 @@ public class ConfirmEmailHandlerTests
 {
     private readonly Mock<UserManager<User>> _userManagerMock;
     private readonly Mock<IHashingService> _hashingServiceMock;
-    private readonly ApplicationContext _dbContext;
+    private readonly ApplicationContext context;
     private readonly TokenService _tokenService; // We use the REAL service
 
     public ConfirmEmailHandlerTests()
     {
         _userManagerMock = CreateUserManagerMock();
         _hashingServiceMock = new Mock<IHashingService>();
-        _dbContext = CreateInMemoryDbContext(Guid.NewGuid().ToString());
+        context = CreateInMemoryDbContext(Guid.NewGuid().ToString());
 
         var inMemorySettings = new Dictionary<string, string> {
             {"JwtSettings:Key", "ThisIsASecretKeyForTestingPurposesOnly123!"}, // Must be long enough for HMACSHA256
@@ -42,7 +42,7 @@ public class ConfirmEmailHandlerTests
     {
         // Arrange
         var request = new ConfirmEmailRequest("invalid-token-string", "123456");
-        var handler = new ConfirmEmailHandler(_userManagerMock.Object, _dbContext, _hashingServiceMock.Object);
+        var handler = new ConfirmEmailHandler(_userManagerMock.Object, context, _hashingServiceMock.Object);
 
         // Act
         var result = await handler.Handle(request, CancellationToken.None);
@@ -63,13 +63,14 @@ public class ConfirmEmailHandlerTests
         var userId = Guid.NewGuid();
         
         var userForToken = new User { Id = userId, Email = "test@example.com" };
-        var token = _tokenService.GenerateToken(userForToken);
+        List<string> roles = new List<string>{}; // No roles needed for this test
+        var token = _tokenService.GenerateToken(userForToken, roles);
         
         _userManagerMock.Setup(x => x.FindByIdAsync(userId.ToString()))
             .ReturnsAsync((User)null);
 
         var request = new ConfirmEmailRequest(token, "123456");
-        var handler = new ConfirmEmailHandler(_userManagerMock.Object, _dbContext, _hashingServiceMock.Object);
+        var handler = new ConfirmEmailHandler(_userManagerMock.Object, context, _hashingServiceMock.Object);
 
         // Act
         var result = await handler.Handle(request, CancellationToken.None);
@@ -90,7 +91,8 @@ public class ConfirmEmailHandlerTests
         var userId = Guid.NewGuid();
         var user = new User { Id = userId, Email = "test@example.com", EmailConfirmed = false };
         
-        var jwtToken = _tokenService.GenerateToken(user);
+        List<string> roles = new List<string>{}; // No roles needed for this test
+        var jwtToken = _tokenService.GenerateToken(user, roles);
         
         var inputCode = "123456";
         var expectedHash = "hashed_123456";
@@ -109,11 +111,11 @@ public class ConfirmEmailHandlerTests
             ExpiresAt = DateTime.UtcNow.AddMinutes(10),
             CreatedAt = DateTime.UtcNow
         };
-        _dbContext.EmailConfirmationTokens.Add(dbToken);
-        await _dbContext.SaveChangesAsync();
+        context.EmailConfirmationTokens.Add(dbToken);
+        await context.SaveChangesAsync();
 
         var request = new ConfirmEmailRequest(jwtToken, inputCode);
-        var handler = new ConfirmEmailHandler(_userManagerMock.Object, _dbContext, _hashingServiceMock.Object);
+        var handler = new ConfirmEmailHandler(_userManagerMock.Object, context, _hashingServiceMock.Object);
 
         // Act
         var result = await handler.Handle(request, CancellationToken.None);
@@ -131,7 +133,8 @@ public class ConfirmEmailHandlerTests
         // Arrange
         var userId = Guid.NewGuid();
         var user = new User { Id = userId, Email = "test@example.com", EmailConfirmed = false };
-        var token = _tokenService.GenerateToken(user);
+        List<string> roles = new List<string>{}; // No roles needed for this test
+        var token = _tokenService.GenerateToken(user, roles);
         
         var inputCode = "123456";
         var wrongHash = "wrong_hash";
@@ -148,11 +151,11 @@ public class ConfirmEmailHandlerTests
             ExpiresAt = DateTime.UtcNow.AddMinutes(10),
             CreatedAt = DateTime.UtcNow
         };
-        _dbContext.EmailConfirmationTokens.Add(dbToken);
-        await _dbContext.SaveChangesAsync();
+        context.EmailConfirmationTokens.Add(dbToken);
+        await context.SaveChangesAsync();
 
         var request = new ConfirmEmailRequest(token, inputCode);
-        var handler = new ConfirmEmailHandler(_userManagerMock.Object, _dbContext, _hashingServiceMock.Object);
+        var handler = new ConfirmEmailHandler(_userManagerMock.Object, context, _hashingServiceMock.Object);
 
         // Act
         var result = await handler.Handle(request, CancellationToken.None);

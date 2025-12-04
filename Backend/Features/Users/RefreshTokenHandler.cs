@@ -47,7 +47,10 @@ public class RefreshTokenHandler(
         storedRefreshToken.RevokedAt = DateTime.UtcNow;
         storedRefreshToken.ReasonRevoked = "Rotated to new token";
         
-        var newAccessToken = tokenService.GenerateToken(user);
+        // Get user roles
+        var roles = await userManager.GetRolesAsync(user);
+        
+        var newAccessToken = tokenService.GenerateToken(user, roles);
         var newRefreshTokenString = tokenService.GenerateRefreshToken();
         
         var newRefreshToken = new RefreshToken

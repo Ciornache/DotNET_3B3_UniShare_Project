@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Backend.Persistence;
 using Backend.Features.Booking;
+using Backend.Features.Bookings.Enums;
 
 namespace Backend.Validators;
 
@@ -20,9 +21,11 @@ public class CreateBookingValidator : AbstractValidator<CreateBookingRequest>
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         
         RuleFor(x => x.Booking!.ItemId)
+            .MustAsync(async (itemId, _) => await ItemExists(itemId))
             .NotEmpty().WithMessage("ItemId is required.");
 
         RuleFor(x => x.Booking!.BorrowerId)
+            .MustAsync(async (userId, _) => await UserExists(userId))
             .NotEmpty().WithMessage("BorrowerId is required.");
 
         RuleFor(x => x.Booking!.StartDate)
@@ -55,7 +58,7 @@ public class CreateBookingValidator : AbstractValidator<CreateBookingRequest>
             var dto = request.Booking!;
             var overlapping = await _context.Bookings
                 .Where(b => b.ItemId == dto.ItemId)
-                .Where(b => b.Status != "Rejected" && b.Status != "Canceled")
+                .Where(b => b.BookingStatus != BookingStatus.Rejected && b.BookingStatus != BookingStatus.Canceled)
                 .Where(b => b.StartDate < dto.EndDate && dto.StartDate < b.EndDate)
                 .AnyAsync();
 
@@ -66,5 +69,15 @@ public class CreateBookingValidator : AbstractValidator<CreateBookingRequest>
             _logger.LogError(ex, "Error while checking item availability for booking validation.");
             return false;
         }
+    }
+    
+    private async Task<bool> ItemExists(Guid itemId)
+    {
+        return await _context.Items.AnyAsync(i => i.Id == itemId);
+    }
+    
+    private async Task<bool> UserExists(Guid userId)
+    {
+        return await _context.Users.AnyAsync(u => u.Id == userId);
     }
 }
