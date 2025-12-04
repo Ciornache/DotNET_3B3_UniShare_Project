@@ -1,0 +1,33 @@
+name: Backend Build and Run
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+        
+    - name: Restore dependencies
+      run: dotnet restore Backend.csproj
+      working-directory: ./Backend
+      
+    - name: Build Backend
+      run: dotnet build Backend.csproj --no-restore --configuration Release
+      working-directory: ./Backend
+      
+    - name: Verify App Can Run
+      run: timeout 30s dotnet run --no-build --configuration Release --project Backend.csproj || code=$?; if [ $code -ne 0 ] && [ $code -ne 124 ]; then exit $code; fi
+      working-directory: ./Backend
+
