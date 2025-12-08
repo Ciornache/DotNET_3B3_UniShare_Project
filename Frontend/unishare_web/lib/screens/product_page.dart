@@ -216,7 +216,6 @@ class _ProductPageState extends State<ProductPage> {
     }
   }
 
-  // NOU: Funcție de trimitere a cererii de împrumut
   Future<void> _requestBooking() async {
     if (_selectedStartDate == null || _selectedEndDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -822,11 +821,6 @@ class _ProductPageState extends State<ProductPage> {
         ),
 
         const SizedBox(height: 30),
-
-        // --- Zile Blocate (Vizualizare simplă) ---
-        // Eliminat titlul "Unavailable Days"
-
-        // Eliminat Wrap-ul de Chip-uri
 
         // --- Reviews Section ---
         Container(
