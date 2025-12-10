@@ -7,7 +7,7 @@ using ILogger = Serilog.ILogger;
 
 namespace Backend.Features.Review;
 
-public class UpdateReviewHandler(ApplicationContext dbContext, IMapper mapper) : IRequestHandler<UpdateReviewRequest, IResult>
+public class UpdateReviewHandler(ApplicationContext dbContext) : IRequestHandler<UpdateReviewRequest, IResult>
 {
     private readonly ILogger _logger = Log.ForContext<UpdateReviewHandler>();
 
