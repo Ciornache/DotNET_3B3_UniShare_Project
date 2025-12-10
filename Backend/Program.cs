@@ -12,6 +12,8 @@ using Backend.Validators;
 using Backend.Services;
 using Backend.Data;
 using Backend.Features.Universities;
+using Backend.Features.Bookings;
+using Backend.Features.Bookings.DTO;
 using Backend.Features.Shared.Pipeline;
 using Backend.Features.Shared.Authorization;
 using Backend.Features.Users;
@@ -320,6 +322,10 @@ itemsGroup.MapDelete("/{id:guid}", async (Guid id, IMediator mediator) =>
     .AllowAdmin()
     .RequireEmailVerification();
 
+itemsGroup.MapGet("/{id:guid}/bookings", async (Guid id, IMediator mediator) =>
+    await mediator.Send(new GetBookingsForItemRequest(id)))
+    .AllowAnonymous();
+
 /// Universities Endpoints
 var universitiesGroup = app.MapGroup("/universities")
     .WithTags("Universities");
@@ -392,6 +398,11 @@ reviewsGroup.MapPost("", async (CreateReviewDTO dto, IMediator mediator) =>
 reviewsGroup.MapPatch("/{id:guid}", async (Guid id, UpdateReviewDto dto, IMediator mediator) =>
         await mediator.Send(new UpdateReviewRequest(id, dto)))
     .WithDescription("Update an existing review's rating and comment")
+    .RequireEmailVerification();
+// Backwards-compatible PUT endpoint (some clients still send PUT instead of PATCH)
+reviewsGroup.MapPut("/{id:guid}", async (Guid id, UpdateReviewDto dto, IMediator mediator) =>
+        await mediator.Send(new UpdateReviewRequest(id, dto)))
+    .WithDescription("(Compatibility) Update an existing review's rating and comment via PUT")
     .RequireEmailVerification();
 
 reviewsGroup.MapDelete("/{id:guid}", async (Guid id, IMediator mediator) =>
