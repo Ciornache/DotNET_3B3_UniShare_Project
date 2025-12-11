@@ -1,12 +1,15 @@
-﻿using Backend.Data;
+﻿﻿﻿using AutoMapper;
+using Backend.Data;
 using Backend.Features.Bookings;
 using Backend.Features.Bookings.DTO;
 using Backend.Features.Bookings.Enums;
+using Backend.Mapping;
 using Backend.Persistence;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 
 namespace Backend.Tests.Handlers.Bookings;
@@ -22,12 +25,19 @@ public class UpdateBookingStatusHandlerTests
         var context = new ApplicationContext(options);
         return context;
     }
+
+    private static IMapper CreateMapper()
+    {
+        var config = new MapperConfiguration(cfg => cfg.AddProfile<BookingMapper>(), NullLoggerFactory.Instance);
+        return config.CreateMapper();
+    }
     
     [Fact]
     public async Task Given_BookingExists_When_Handle_Then_UpdatesStatusAndReturnsOk()
     {
         // Arrange
         var logger = new Mock<ILogger<UpdateBookingStatusHandler>>().Object;
+        var mapper = CreateMapper();
         var context = CreateInMemoryDbContext("a1b2c3d4-e5f6-7a8b-9c0d-e1f2a3a4c5d6" );
         var userId = Guid.Parse("bbcdefaa-cdef-abcd-efab-cdefabcdafab");
         var bookingId = Guid.Parse("bbcdefab-cdef-abcd-efab-cdefabcdefaa");
@@ -58,7 +68,7 @@ public class UpdateBookingStatusHandlerTests
         context.Bookings.Add(booking);
         await context.SaveChangesAsync();
         
-        var handler = new UpdateBookingStatusHandler(context, logger);
+        var handler = new UpdateBookingStatusHandler(context, logger, mapper);
 
         var dto = new UpdateBookingStatusDto(userId, BookingStatus.Approved);
        
@@ -80,8 +90,9 @@ public class UpdateBookingStatusHandlerTests
     {
         // Arrange
         var logger = new Mock<ILogger<UpdateBookingStatusHandler>>().Object;
+        var mapper = CreateMapper();
         var context = CreateInMemoryDbContext("a1b2c3d4-e5f6-7a8b-9c0d-e1f2a9b4c5d6");
-        var handler = new UpdateBookingStatusHandler(context, logger);
+        var handler = new UpdateBookingStatusHandler(context, logger, mapper);
         var bookingId = Guid.Parse("11111111-1111-1111-1111-111111111111");
         var dto = new UpdateBookingStatusDto(Guid.Parse("22222222-2222-2222-2222-222222222222"), BookingStatus.Approved);
         var request = new UpdateBookingStatusRequest(bookingId, dto);
@@ -99,8 +110,9 @@ public class UpdateBookingStatusHandlerTests
     {
         // Arrange
         var logger = new Mock<ILogger<UpdateBookingStatusHandler>>().Object;
+        var mapper = CreateMapper();
         var context = CreateInMemoryDbContext("a1b2c3d4-e5f6-7a8b-9c0d-e1f2a3b005d6");
-        var handler = new UpdateBookingStatusHandler(context, logger);
+        var handler = new UpdateBookingStatusHandler(context, logger, mapper);
         var dto = new UpdateBookingStatusDto(Guid.Parse("33333333-3333-3333-3333-333333333333"), BookingStatus.Approved);
         var request = new UpdateBookingStatusRequest(Guid.Empty, dto);
         
@@ -117,6 +129,7 @@ public class UpdateBookingStatusHandlerTests
     {
         // Arrange
         var logger = new Mock<ILogger<UpdateBookingStatusHandler>>().Object;
+        var mapper = CreateMapper();
         var context = CreateInMemoryDbContext("a1b2c004-e5f6-7a8b-9c0d-e1f2a3b4c5d6");
         var bookingId = Guid.Parse("a1b2c004-e5f6-7a8b-9000-e1f2a3b4c5d6");
         var itemId = Guid.Parse("a1b2c004-e5f6-7a8b-000d-e1f2a3b4c5d6");
@@ -145,7 +158,7 @@ public class UpdateBookingStatusHandlerTests
         context.Bookings.Add(booking);
         await context.SaveChangesAsync();
         
-        var handler = new UpdateBookingStatusHandler(context, logger);
+        var handler = new UpdateBookingStatusHandler(context, logger, mapper);
         // Update to the same status
         var dto = new UpdateBookingStatusDto(Guid.Parse("a1b2c004-6666-7a8b-9c0d-e1f2a3b4c5d6"), BookingStatus.Approved);
         var request = new UpdateBookingStatusRequest(bookingId, dto);
@@ -166,6 +179,7 @@ public class UpdateBookingStatusHandlerTests
     {
         // Arrange
         var logger = new Mock<ILogger<UpdateBookingStatusHandler>>().Object;
+        var mapper = CreateMapper();
         var context = CreateInMemoryDbContext("db-44444444-4444-4444-4444-444444444444");
         var bookingId = Guid.Parse("44444444-4444-4444-4444-444444444444");
         var itemId = Guid.Parse("55555555-5555-5555-5555-555555555555");
@@ -202,7 +216,7 @@ public class UpdateBookingStatusHandlerTests
         context.Bookings.Add(booking);
         await context.SaveChangesAsync();
         
-        var handler = new UpdateBookingStatusHandler(context, logger);
+        var handler = new UpdateBookingStatusHandler(context, logger, mapper);
         var dto = new UpdateBookingStatusDto(Guid.Parse("88888888-8888-8888-8888-888888888888"), BookingStatus.Completed);
         var request = new UpdateBookingStatusRequest(bookingId, dto);
         
@@ -219,6 +233,7 @@ public class UpdateBookingStatusHandlerTests
     {
         // Arrange
         var logger = new Mock<ILogger<UpdateBookingStatusHandler>>().Object;
+        var mapper = CreateMapper();
         var context = CreateInMemoryDbContext("db-99999999-9999-9999-9999-999999999999");
         var bookingId = Guid.Parse("99999999-9999-9999-9999-999999999999");
         var itemId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
@@ -249,7 +264,7 @@ public class UpdateBookingStatusHandlerTests
         context.Bookings.Add(booking);
         await context.SaveChangesAsync();
         
-        var handler = new UpdateBookingStatusHandler(context, logger);
+        var handler = new UpdateBookingStatusHandler(context, logger, mapper);
         var dto = new UpdateBookingStatusDto(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd"), BookingStatus.Canceled);
         var request = new UpdateBookingStatusRequest(bookingId, dto);
         
@@ -269,6 +284,7 @@ public class UpdateBookingStatusHandlerTests
     {
         // Arrange
         var logger = new Mock<ILogger<UpdateBookingStatusHandler>>().Object;
+        var mapper = CreateMapper();
         var context = CreateInMemoryDbContext("db-eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
         var targetBookingId = Guid.Parse("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
         var otherBookingId = Guid.Parse("ffffffff-ffff-ffff-ffff-ffffffffffff");
@@ -309,7 +325,7 @@ public class UpdateBookingStatusHandlerTests
         context.Bookings.Add(otherBooking);
         await context.SaveChangesAsync();
         
-        var handler = new UpdateBookingStatusHandler(context, logger);
+        var handler = new UpdateBookingStatusHandler(context, logger, mapper);
         var dto = new UpdateBookingStatusDto(Guid.Parse("11111111-2222-3333-4444-999999999999"), BookingStatus.Approved);
         var request = new UpdateBookingStatusRequest(targetBookingId, dto);
         
@@ -332,6 +348,7 @@ public class UpdateBookingStatusHandlerTests
     {
         // Arrange
         var logger = new Mock<ILogger<UpdateBookingStatusHandler>>().Object;
+        var mapper = CreateMapper();
         var context = CreateInMemoryDbContext("db-a1a1a1a1-a1a1-a1a1-a1a1-a1a1a1a1a1a1");
         var bookingId = Guid.Parse("a1a1a1a1-a1a1-a1a1-a1a1-a1a1a1a1a1a1");
         var itemId = Guid.Parse("a2a2a2a2-a2a2-a2a2-a2a2-a2a2a2a2a2a2");
@@ -362,7 +379,7 @@ public class UpdateBookingStatusHandlerTests
         context.Bookings.Add(booking);
         await context.SaveChangesAsync();
         
-        var handler = new UpdateBookingStatusHandler(context, logger);
+        var handler = new UpdateBookingStatusHandler(context, logger, mapper);
         var dto = new UpdateBookingStatusDto(Guid.Parse("a5a5a5a5-a5a5-a5a5-a5a5-a5a5a5a5a5a5"), BookingStatus.Completed);
         var request = new UpdateBookingStatusRequest(bookingId, dto);
         
@@ -382,6 +399,7 @@ public class UpdateBookingStatusHandlerTests
     {
         // Arrange
         var logger = new Mock<ILogger<UpdateBookingStatusHandler>>().Object;
+        var mapper = CreateMapper();
         var context = CreateInMemoryDbContext("db-b1b1b1b1-b1b1-b1b1-b1b1-b1b1b1b1b1b1");
         var bookingId = Guid.Parse("b1b1b1b1-b1b1-b1b1-b1b1-b1b1b1b1b1b1");
         var itemId = Guid.Parse("b2b2b2b2-b2b2-b2b2-b2b2-b2b2b2b2b2b2");
@@ -412,7 +430,7 @@ public class UpdateBookingStatusHandlerTests
         context.Bookings.Add(booking);
         await context.SaveChangesAsync();
         
-        var handler = new UpdateBookingStatusHandler(context, logger);
+        var handler = new UpdateBookingStatusHandler(context, logger, mapper);
         var dto = new UpdateBookingStatusDto(Guid.Parse("b5b5b5b5-b5b5-b5b5-b5b5-b5b5b5b5b5b5"), BookingStatus.Rejected);
         var request = new UpdateBookingStatusRequest(bookingId, dto);
         

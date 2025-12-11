@@ -1,4 +1,7 @@
-﻿using Backend.Persistence;
+﻿﻿using AutoMapper;
+using AutoMapper.QueryableExtensions;
+using Backend.Features.Bookings.DTO;
+using Backend.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
@@ -11,7 +14,7 @@ namespace Backend.Features.Users;
 /// Queries the database to find the booking by <c>BookingId</c> and ensures the
 /// item belongs to the provided user before returning the booking record.
 /// </summary>
-public class GetUserBookedItemHandler(ApplicationContext context) : IRequestHandler<GetUserBookedItemRequest, IResult>
+public class GetUserBookedItemHandler(ApplicationContext context, IMapper mapper) : IRequestHandler<GetUserBookedItemRequest, IResult>
 {
     private readonly ILogger _logger = Log.ForContext<GetUserBookedItemHandler>();
     
@@ -19,12 +22,9 @@ public class GetUserBookedItemHandler(ApplicationContext context) : IRequestHand
     {
         var bookedItem = await context.Bookings
             .Where(booking => booking.Id == request.BookingId)
-            .Join( context.Items,
-                   booking => booking.ItemId, 
-                     item => item.Id,
-                     ( booking, item) => new { booking, item } )
-            .Where(joined => joined.item.OwnerId == request.UserId)
-            .Select(x => x.booking)
+            .Include(b => b.Item)
+            .Where(b => b.Item != null && b.Item.OwnerId == request.UserId)
+            .ProjectTo<BookingDto>(mapper.ConfigurationProvider)
             .FirstOrDefaultAsync(cancellationToken);
             
 

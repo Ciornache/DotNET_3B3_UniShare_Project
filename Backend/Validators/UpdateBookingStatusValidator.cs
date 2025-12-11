@@ -1,4 +1,5 @@
 ﻿using Backend.Features.Bookings;
+using Backend.Features.Bookings.Enums;
 using FluentValidation;
 using Backend.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -20,6 +21,10 @@ public class UpdateBookingStatusValidator : AbstractValidator<UpdateBookingStatu
 
         RuleFor(r => r.BookingId)
             .NotEmpty().WithMessage("BookingId is required.");
+
+        RuleFor(r => r.BookingStatusDto!.BookingStatus)
+            .IsInEnum().WithMessage("BookingStatus must be a valid status (Pending, Approved, Rejected, Completed, Canceled).")
+            .When(r => r.BookingStatusDto != null);
 
         RuleFor(r => r).Must(ValidateOwnershipAsync);
     }

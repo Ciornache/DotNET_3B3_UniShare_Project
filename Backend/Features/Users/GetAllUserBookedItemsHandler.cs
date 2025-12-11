@@ -1,13 +1,14 @@
-﻿using AutoMapper;
+using AutoMapper;
 using AutoMapper.QueryableExtensions;
-using Backend.Persistence;
 using Backend.Features.Items.DTO;
+using Backend.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using ILogger = Serilog.ILogger;
 
 namespace Backend.Features.Users;
+
 
 public class GetAllUserBookedItemsHandler(ApplicationContext context, IMapper mapper, ILogger<GetAllUserBookedItemsHandler> logger) : IRequestHandler< GetAllUserBookedItemsRequest, IResult>
 {
@@ -21,7 +22,8 @@ public class GetAllUserBookedItemsHandler(ApplicationContext context, IMapper ma
             .Join(context.Bookings,
                 item => item.Id,
                 booking => booking.ItemId,
-                (item, booking) => item)
+                (item, booking) => new { item, booking })
+            .Select(x => x.item)
             .Distinct();
 
         var dtoList = await query

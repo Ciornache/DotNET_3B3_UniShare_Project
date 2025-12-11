@@ -1,4 +1,7 @@
-﻿using Backend.Persistence;
+﻿﻿using AutoMapper;
+using AutoMapper.QueryableExtensions;
+using Backend.Features.Bookings.DTO;
+using Backend.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
@@ -6,7 +9,7 @@ using ILogger = Serilog.ILogger;
 
 namespace Backend.Features.Bookings;
 
-public class GetAllBookingsHandler(ApplicationContext dbContext) : IRequestHandler<GetAllBookingsRequest, IResult>
+public class GetAllBookingsHandler(ApplicationContext dbContext, IMapper mapper) : IRequestHandler<GetAllBookingsRequest, IResult>
 {
     private readonly ILogger _logger = Log.ForContext<GetAllBookingsHandler>();
 
@@ -15,7 +18,10 @@ public class GetAllBookingsHandler(ApplicationContext dbContext) : IRequestHandl
         _logger.Information("Attempting to retrieve all bookings.");
         try
         {
-            var bookings = await dbContext.Bookings.ToListAsync(cancellationToken);
+            var bookings = await dbContext.Bookings
+                .Include(b => b.Item)
+                .ProjectTo<BookingDto>(mapper.ConfigurationProvider)
+                .ToListAsync(cancellationToken);
             _logger.Information("Retrieved {Count} bookings.", bookings.Count);
             return Results.Ok(bookings);
         }

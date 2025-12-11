@@ -141,8 +141,12 @@ builder.Services.AddMediatR(cfg =>
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 if (builder.Environment.EnvironmentName != "Testing")
 {
+    if (string.IsNullOrEmpty(connectionString))
+    {
+        Log.Warning("No database connection string configured. Database features will not be available.");
+    }
     builder.Services.AddDbContext<ApplicationContext>(options =>
-        options.UseNpgsql(connectionString));
+        options.UseNpgsql(connectionString ?? ""));
 }
 
 builder.Services.AddScoped<ITokenService, TokenService>();
@@ -169,29 +173,37 @@ builder.Services.AddFluentValidationAutoValidation();
 var app = builder.Build();
 
 // Initialize roles and seed database
-using (var scope = app.Services.CreateScope())
+var dbConnectionString = app.Configuration.GetConnectionString("DefaultConnection");
+if (!string.IsNullOrEmpty(dbConnectionString))
 {
-    var services = scope.ServiceProvider;
-    var context = services.GetRequiredService<ApplicationContext>();
-
-
-    if (app.Environment.EnvironmentName != "Testing")
+    using (var scope = app.Services.CreateScope())
     {
-        // Apply pending migrations
-        if (context.Database.IsRelational())
+        var services = scope.ServiceProvider;
+        var context = services.GetRequiredService<ApplicationContext>();
+
+
+        if (app.Environment.EnvironmentName != "Testing")
         {
-            var userManager = services.GetRequiredService<UserManager<User>>();
-            var roleManager = services.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
-            // If we run the app normally, apply migrations
-            await context.Database.MigrateAsync();
-            await DatabaseSeeder.SeedAsync(context, userManager, roleManager);
-        }
-        else
-        {
-            // If we run the tests with InMemory database, ensure created
-            await context.Database.EnsureCreatedAsync();
+            // Apply pending migrations
+            if (context.Database.IsRelational())
+            {
+                var userManager = services.GetRequiredService<UserManager<User>>();
+                var roleManager = services.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
+                // If we run the app normally, apply migrations
+                await context.Database.MigrateAsync();
+                await DatabaseSeeder.SeedAsync(context, userManager, roleManager);
+            }
+            else
+            {
+                // If we run the tests with InMemory database, ensure created
+                await context.Database.EnsureCreatedAsync();
+            }
         }
     }
+}
+else
+{
+    Log.Warning("Skipping database initialization - no connection string configured");
 }
 
 app.UseCors("AllowAll");
@@ -363,16 +375,19 @@ bookingVerifiedGroup.MapGet("/{id:guid}", async (Guid id, IMediator mediator) =>
 
 bookingVerifiedGroup.MapPost("", async (CreateBookingDto dto, IMediator mediator) =>
         await mediator.Send(new CreateBookingRequest(dto)))
-    .WithDescription("Create a new booking");
+    .WithDescription("Create a new booking")
+    .RequireAuthorization();
 
 bookingVerifiedGroup.MapPatch("/{id:guid}",
         async (Guid id, UpdateBookingStatusDto bookingStatusDto, IMediator mediator) =>
             await mediator.Send(new UpdateBookingStatusRequest(id, bookingStatusDto)))
-    .WithDescription("Update the status of a booking");
+    .WithDescription("Update the status of a booking")
+    .RequireAuthorization();
 
 bookingVerifiedGroup.MapDelete("/{id:guid}", async (Guid id, IMediator mediator) =>
         await mediator.Send(new DeleteBookingRequest(id)))
-    .WithDescription("Delete a booking");
+    .WithDescription("Delete a booking")
+    .RequireAuthorization();
 
 
 /// Reviews Endpoints

@@ -116,3 +116,5 @@ Use the `Backend.http` file with JetBrains Rider or VS Code REST Client extensio
 - Use environment variables or Azure Key Vault for production
 - Rotate JWT keys and app passwords regularly
 - Revoke app passwords if compromised
+
+•ᴗ•
