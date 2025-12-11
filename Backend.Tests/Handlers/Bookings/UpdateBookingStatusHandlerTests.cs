@@ -1,4 +1,4 @@
-﻿﻿using AutoMapper;
+﻿﻿﻿using AutoMapper;
 using Backend.Data;
 using Backend.Features.Bookings;
 using Backend.Features.Bookings.DTO;
@@ -28,7 +28,7 @@ public class UpdateBookingStatusHandlerTests
 
     private static IMapper CreateMapper()
     {
-        var config = new MapperConfiguration(cfg => cfg.AddProfile<BookingMapper>(), new NullLoggerFactory());
+        var config = new MapperConfiguration(cfg => cfg.AddProfile<BookingMapper>(), NullLoggerFactory.Instance);
         return config.CreateMapper();
     }
     

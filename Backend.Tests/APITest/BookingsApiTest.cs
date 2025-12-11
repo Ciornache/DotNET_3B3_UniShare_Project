@@ -11,7 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Backend.Tests.APITest;
 
-public class BookingsApiTest(CustomWebApplicationFactory factory) : IClassFixture<CustomWebApplicationFactory>
+public class BookingsApiTest(CustomWebApplicationFactory factory) : IClassFixture<CustomWebApplicationFactory>, IAsyncLifetime
 {
     private readonly HttpClient _client = factory.CreateClient();
     private IServiceScope _scope = factory.Services.CreateScope();
@@ -27,6 +27,13 @@ public class BookingsApiTest(CustomWebApplicationFactory factory) : IClassFixtur
             context,
             _scope.ServiceProvider.GetRequiredService<UserManager<User>>(),
             _scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<Guid>>>());
+    }
+
+    public Task DisposeAsync()
+    {
+        _scope.Dispose();
+        _client.Dispose();
+        return Task.CompletedTask;
     }
 
     [Fact]
