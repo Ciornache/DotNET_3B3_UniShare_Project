@@ -1,9 +1,8 @@
 ﻿namespace Backend.Features.Users.Dtos;
 
 public record LoginUserResponseDto(
-    string AccessToken, 
-    string RefreshToken, 
-    int ExpiresIn,
-    string TokenType = "Bearer"
+    string AccessToken,
+    string RefreshToken,
+    int ExpiresIn
 );
 

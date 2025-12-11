@@ -13,16 +13,16 @@ public class CreateReviewHandler(ApplicationContext dbContext, IMapper mapper) :
     
     public async Task<IResult> Handle(CreateReviewRequest request, CancellationToken cancellationToken)
     {
-        _logger.Information("Creating review for item {TargetItemId} and targetUser {}", request.Review.TargetItemId, request.Review.TargetUserId);
-        
+        _logger.Information("Creating review for item {TargetItemId} and targetUser {TargetUserId}", request.Review.TargetItemId, request.Review.TargetUserId);
+
         var review = mapper.Map<Data.Review>(request.Review);
 
         try
         {
             dbContext.Reviews.Add(review);
             await dbContext.SaveChangesAsync(cancellationToken);
-            
-            _logger.Information("Review {ReviewId} created successfully for item {TargetItemId} and targetUser {}", 
+
+            _logger.Information("Review {ReviewId} created successfully for item {TargetItemId} and targetUser {TargetUserId}",
                 review.Id, review.TargetItemId, review.TargetUserId);
                 
             return Results.Created($"/reviews/{review.Id}", review);

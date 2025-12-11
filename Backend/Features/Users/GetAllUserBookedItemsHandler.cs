@@ -1,4 +1,5 @@
-﻿﻿using AutoMapper;
+
+using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Backend.Features.Items.DTO;
 using Backend.Persistence;
@@ -9,20 +10,15 @@ using ILogger = Serilog.ILogger;
 
 namespace Backend.Features.Users;
 
-public class GetAllUserBookedItemsHandler(ApplicationContext context, IMapper mapper) : IRequestHandler<GetAllUserBookedItemsRequest, IResult>
+
+public class GetAllUserBookedItemsHandler(ApplicationContext context, IMapper mapper, ILogger<GetAllUserBookedItemsHandler> logger) : IRequestHandler< GetAllUserBookedItemsRequest, IResult>
 {
     private readonly ILogger _logger = Log.ForContext<GetAllUserBookedItemsHandler>();
     
     public async Task<IResult> Handle(GetAllUserBookedItemsRequest request, CancellationToken cancellationToken)
     {
-        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == request.UserId, cancellationToken);
-        if (user == null)
-        {
-            _logger.Warning("User with ID {UserId} not found.", request.UserId);
-            return Results.NotFound();
-        }
-
-        var bookedItems = await context.Items
+        var query = context.Items
+            .Include(i => i.Owner)
             .Where(item => item.OwnerId == request.UserId)
             .Join(context.Bookings,
                 item => item.Id,
@@ -30,10 +26,14 @@ public class GetAllUserBookedItemsHandler(ApplicationContext context, IMapper ma
                 (item, booking) => new { item, booking })
             .Select(x => x.item)
             .Distinct()
+                (item, booking) => item)
+            .Distinct();
+
+        var dtoList = await query
             .ProjectTo<ItemDto>(mapper.ConfigurationProvider)
             .ToListAsync(cancellationToken);
-        
-        _logger.Information("Retrieved {Count} booked items for user ID {UserId}.", bookedItems.Count, request.UserId);
-        return Results.Ok(bookedItems);
+
+        logger.LogInformation("Retrieved {Count} booked items for user ID {UserId}.", dtoList.Count, request.UserId);
+        return Results.Ok(dtoList);
     }
 }
