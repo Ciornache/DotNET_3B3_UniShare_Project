@@ -5,7 +5,7 @@ using System.Text.Json;
 using Backend.Data;
 using Backend.Features.Users;
 using Backend.Persistence;
-using Backend.Tests.Seeder;
+using Backend.Tests.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 
