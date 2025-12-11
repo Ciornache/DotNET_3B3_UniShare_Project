@@ -1,9 +1,13 @@
-﻿using Backend.Data;
+﻿﻿using AutoMapper;
+using Backend.Data;
 using Backend.Features.Bookings;
+using Backend.Features.Bookings.DTO;
+using Backend.Mapping;
 using Backend.Persistence;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Backend.Tests.Handlers.Bookings;
 
@@ -18,17 +22,45 @@ public class GetAllBookingsHandlerTests
         var context = new ApplicationContext(options);
         return context;
     }
+
+    private static IMapper CreateMapper()
+    {
+        var config = new MapperConfiguration(cfg => cfg.AddProfile<BookingMapper>(), new NullLoggerFactory());
+        return config.CreateMapper();
+    }
  
     [Fact]
     public async Task Given_BookingsExist_When_Handle_Then_ReturnsAllBookings()
     {
         // Arrange
         var context = CreateInMemoryDbContext("a1b2c3d4-eaf6-7a8b-9c0d-e1f2a3b4c5d6");
+        var mapper = CreateMapper();
+        
+        var itemId1 = Guid.NewGuid();
+        var itemId2 = Guid.NewGuid();
+        
+        var item1 = new Item
+        {
+            Id = itemId1,
+            Name = "Item 1",
+            Description = "Description 1",
+            OwnerId = Guid.NewGuid()
+        };
+        
+        var item2 = new Item
+        {
+            Id = itemId2,
+            Name = "Item 2",
+            Description = "Description 2",
+            OwnerId = Guid.NewGuid()
+        };
+        
+        context.Items.AddRange(item1, item2);
         
         var booking1 = new Booking
         {
             Id = Guid.NewGuid(),
-            ItemId = Guid.NewGuid(),
+            ItemId = itemId1,
             BorrowerId = Guid.NewGuid(),
             StartDate = DateTime.UtcNow,
             EndDate = DateTime.UtcNow.AddDays(2)
@@ -37,7 +69,7 @@ public class GetAllBookingsHandlerTests
         var booking2 = new Booking
         {
             Id = Guid.NewGuid(),
-            ItemId = Guid.NewGuid(),
+            ItemId = itemId2,
             BorrowerId = Guid.NewGuid(),
             StartDate = DateTime.UtcNow.AddDays(3),
             EndDate = DateTime.UtcNow.AddDays(5)
@@ -46,7 +78,7 @@ public class GetAllBookingsHandlerTests
         context.Bookings.AddRange(booking1, booking2);
         await context.SaveChangesAsync();
         
-        var handler = new GetAllBookingsHandler(context);
+        var handler = new GetAllBookingsHandler(context, mapper);
         var request = new GetAllBookingsRequest();
         
         // Act
@@ -57,7 +89,7 @@ public class GetAllBookingsHandlerTests
         statusResult.StatusCode.Should().Be(StatusCodes.Status200OK);
         
         var valueResult = result.Should().BeAssignableTo<IValueHttpResult>().Subject;
-        var bookings = valueResult.Value.Should().BeAssignableTo<List<Booking>>().Subject;
+        var bookings = valueResult.Value.Should().BeAssignableTo<List<BookingDto>>().Subject;
         
         bookings.Should().HaveCount(2);
         bookings.Should().Contain(b => b.Id == booking1.Id);
@@ -69,8 +101,9 @@ public class GetAllBookingsHandlerTests
     {
         // Arrange
         var context = CreateInMemoryDbContext("a1b2c3d4-e0f6-7a8b-9c0d-e1f2a3b4c5d6");
+        var mapper = CreateMapper();
         
-        var handler = new GetAllBookingsHandler(context);
+        var handler = new GetAllBookingsHandler(context, mapper);
         var request = new GetAllBookingsRequest();
         
         // Act
@@ -81,7 +114,7 @@ public class GetAllBookingsHandlerTests
         statusResult.StatusCode.Should().Be(StatusCodes.Status200OK);
         
         var valueResult = result.Should().BeAssignableTo<IValueHttpResult>().Subject;
-        var bookings = valueResult.Value.Should().BeAssignableTo<List<Booking>>().Subject;
+        var bookings = valueResult.Value.Should().BeAssignableTo<List<BookingDto>>().Subject;
         
         bookings.Should().BeEmpty();
     }
@@ -90,7 +123,8 @@ public class GetAllBookingsHandlerTests
     public async Task Given_ExceptionOccurs_When_Handle_Then_ReturnsProblemResult()
     {
         // Arrange
-        var handler = new GetAllBookingsHandler(null!);
+        var mapper = CreateMapper();
+        var handler = new GetAllBookingsHandler(null!, mapper);
         var request = new GetAllBookingsRequest();
         
         // Act

@@ -1,4 +1,7 @@
-﻿using Backend.Persistence;
+﻿﻿using AutoMapper;
+using AutoMapper.QueryableExtensions;
+using Backend.Features.Items.DTO;
+using Backend.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
@@ -6,7 +9,7 @@ using ILogger = Serilog.ILogger;
 
 namespace Backend.Features.Users;
 
-public class GetAllUserBookedItemsHandler(ApplicationContext context) : IRequestHandler<GetAllUserBookedItemsRequest, IResult>
+public class GetAllUserBookedItemsHandler(ApplicationContext context, IMapper mapper) : IRequestHandler<GetAllUserBookedItemsRequest, IResult>
 {
     private readonly ILogger _logger = Log.ForContext<GetAllUserBookedItemsHandler>();
     
@@ -27,6 +30,7 @@ public class GetAllUserBookedItemsHandler(ApplicationContext context) : IRequest
                 (item, booking) => new { item, booking })
             .Select(x => x.item)
             .Distinct()
+            .ProjectTo<ItemDto>(mapper.ConfigurationProvider)
             .ToListAsync(cancellationToken);
         
         _logger.Information("Retrieved {Count} booked items for user ID {UserId}.", bookedItems.Count, request.UserId);

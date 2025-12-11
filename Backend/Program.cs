@@ -357,16 +357,19 @@ bookingVerifiedGroup.MapGet("/{id:guid}", async (Guid id, IMediator mediator) =>
 
 bookingVerifiedGroup.MapPost("", async (CreateBookingDto dto, IMediator mediator) =>
         await mediator.Send(new CreateBookingRequest(dto)))
-    .WithDescription("Create a new booking");
+    .WithDescription("Create a new booking")
+    .RequireAuthorization();
 
 bookingVerifiedGroup.MapPatch("/{id:guid}",
         async (Guid id, UpdateBookingStatusDto bookingStatusDto, IMediator mediator) =>
             await mediator.Send(new UpdateBookingStatusRequest(id, bookingStatusDto)))
-    .WithDescription("Update the status of a booking");
+    .WithDescription("Update the status of a booking")
+    .RequireAuthorization();
 
 bookingVerifiedGroup.MapDelete("/{id:guid}", async (Guid id, IMediator mediator) =>
         await mediator.Send(new DeleteBookingRequest(id)))
-    .WithDescription("Delete a booking");
+    .WithDescription("Delete a booking")
+    .RequireAuthorization();
 
 
 /// Reviews Endpoints
