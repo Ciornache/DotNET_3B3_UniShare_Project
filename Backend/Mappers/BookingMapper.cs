@@ -22,5 +22,10 @@ public class BookingMapper : Profile
             .ForMember(dest => dest.RequestedOn, opt => opt.MapFrom(src => src.RequestedOn))
             .ForMember(dest => dest.StartDate, opt => opt.MapFrom(src => src.StartDate))
             .ForMember(dest => dest.EndDate, opt => opt.MapFrom(src => src.EndDate));
+
+        CreateMap<Item, ItemDto>();
+
+        CreateMap<Booking, BookingDto>()
+            .ForMember(dest => dest.Item, opt => opt.MapFrom(src => src.Item));
     }
 }

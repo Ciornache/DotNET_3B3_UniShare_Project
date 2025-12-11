@@ -1,4 +1,5 @@
-﻿using Backend.Persistence;
+﻿using AutoMapper;
+using Backend.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Backend.Features.Bookings.DTO;
@@ -7,10 +8,7 @@ using Backend.Features.Bookings.Enums;
 namespace Backend.Features.Bookings;
 
 
-//TO DO: am impresia ca aveam nevoie de jwt pentru a valida userul care face update la booking status
-//       validatorul trebuie sa verifice ca bookedul la care schimb statusul apartine userului respectiva
-//       validatorul trebuie sa verifice ca statusul este unul valid (enum?)
-public class UpdateBookingStatusHandler(ApplicationContext dbContext, ILogger<UpdateBookingStatusHandler> logger) : IRequestHandler<UpdateBookingStatusRequest, IResult>
+public class UpdateBookingStatusHandler(ApplicationContext dbContext, ILogger<UpdateBookingStatusHandler> logger, IMapper mapper) : IRequestHandler<UpdateBookingStatusRequest, IResult>
 { 
     public async Task<IResult> Handle(UpdateBookingStatusRequest request, CancellationToken cancellationToken)
     {
@@ -30,20 +28,7 @@ public class UpdateBookingStatusHandler(ApplicationContext dbContext, ILogger<Up
 
         await dbContext.SaveChangesAsync(cancellationToken);
 
-        var itemDto = booking.Item is not null ? new ItemDto(booking.Item.Id, booking.Item.Name, booking.Item.OwnerId) : null;
-
-        var bookingDto = new BookingDto(
-            booking.Id,
-            booking.ItemId,
-            booking.BorrowerId,
-            booking.RequestedOn,
-            booking.StartDate,
-            booking.EndDate,
-            booking.BookingStatus,
-            booking.ApprovedOn,
-            booking.CompletedOn,
-            itemDto
-        );
+        var bookingDto = mapper.Map<BookingDto>(booking);
 
         logger.LogInformation("Booking with ID {BookingId} status updated to {NewStatus}.", request.BookingId, dto.BookingStatus);
         return Results.Ok(bookingDto);

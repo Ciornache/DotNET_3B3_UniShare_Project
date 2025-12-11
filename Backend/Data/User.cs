@@ -54,5 +54,7 @@ public class User : IdentityUser<Guid>
 
     [InverseProperty(nameof(Review.TargetUser))]
     public List<Review>? ReviewsReceived { get; set; }
+
+    public bool EmailConfirmed { get; set; }
 }
 
