@@ -261,7 +261,7 @@ authGroup.MapPost("/email-confirmation", async (ConfirmEmailDto dto, IMediator m
 
 // Password reset endpoints
 authGroup.MapPost("/password-reset/request", async (RequestPasswordResetDto dto, IMediator mediator) =>
-        await mediator.Send(new RequestPasswordResetRequest(dto.UserId)))
+        await mediator.Send(new RequestPasswordResetRequest(dto.Email)))
     .WithDescription("Request a password reset code to be sent via email")
     .AllowAnonymous();
 

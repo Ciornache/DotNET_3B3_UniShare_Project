@@ -95,10 +95,26 @@ class _LoginPageState extends State<LoginPage> {
                       borderRadius: BorderRadius.circular(10),
                     ),
                     // Poți adăuga un sufix pentru 'show/hide password'
+                    errorText: context.watch<AuthProvider>().fieldErrors['password'],
                   ),
                   obscureText: true,
                 ),
-                const SizedBox(height: 30),
+                const SizedBox(height: 10),
+
+                // Link "Forgot password?" aliniat la dreapta
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.pushNamed(context, '/forgot-password');
+                    },
+                    child: const Text(
+                      'Forgot password?',
+                      style: TextStyle(color: Colors.deepPurple, fontSize: 14),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
 
                 // 4. Buton Login (ElevatedButton) cu dimensiuni și stil îmbunătățite
                 SizedBox(

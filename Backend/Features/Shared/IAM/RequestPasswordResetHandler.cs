@@ -18,26 +18,26 @@ public class RequestPasswordResetHandler(
     
     public async Task<IResult> Handle(RequestPasswordResetRequest request, CancellationToken cancellationToken)
     {
-        _logger.Information("Attempting to send password reset token to user {UserId}", request.UserId);
-        
-        var user = await userManager.FindByIdAsync(request.UserId.ToString());
-        
+        _logger.Information("Attempting to send password reset token to email {Email}", request.Email);
+
+        var user = await userManager.FindByEmailAsync(request.Email);
+
         if (user == null)
         {
-            _logger.Warning("User {UserId} not found for password reset", request.UserId);
+            _logger.Warning("User with email {Email} not found for password reset", request.Email);
             return Results.NotFound(new { error = "User not found" });
         }
 
         if (user.Email == null)
         {
-            _logger.Warning("User {UserId} has no email address", request.UserId);
+            _logger.Warning("User {UserId} has no email address", user.Id);
             return Results.BadRequest(new { error = "User has no email address" });
         }
 
         // Generate password reset token using UserManager
         var resetToken = await userManager.GeneratePasswordResetTokenAsync(user);
         
-        _logger.Information("Generated password reset token for user {UserId}", request.UserId);
+        _logger.Information("Generated password reset token for user {UserId}", user.Id);
 
         // Store the token in the database with expiration
         var passwordResetToken = new PasswordResetToken
@@ -64,7 +64,7 @@ public class RequestPasswordResetHandler(
         await context.SaveChangesAsync(cancellationToken);
         
         _logger.Information("Saved password reset token for user {UserId}, expires at {ExpiresAt}", 
-            request.UserId, passwordResetToken.ExpiresAt);
+            user.Id, passwordResetToken.ExpiresAt);
 
         try
         {
