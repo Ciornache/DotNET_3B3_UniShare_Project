@@ -1,4 +1,4 @@
-﻿using Backend.Persistence;
+﻿﻿using Backend.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Validators;
@@ -9,11 +9,24 @@ public class EmailValidator(ApplicationContext dbContext) : IUserValidator<User>
 {
     public Task<IdentityResult> ValidateAsync(UserManager<User> manager, User user)
     {
-        University university = dbContext.Set<University>().ToList()
+        // If user has no university ID, skip email domain validation
+        // This can happen during password reset or for users without university
+        if (user.UniversityId == null)
+        {
+            return Task.FromResult(IdentityResult.Success);
+        }
+
+        University? university = dbContext.Set<University>().ToList()
             .Where(u => u.Id == user.UniversityId).FirstOrDefault();
         
         Console.WriteLine($"Validating email: {user.Email} for university domain: {university?.EmailDomain}");
         
+        // If university not found or has no email domain, skip validation
+        if (university == null || string.IsNullOrEmpty(university.EmailDomain))
+        {
+            return Task.FromResult(IdentityResult.Success);
+        }
+
         if (user.Email != null) {
             string domain = university.EmailDomain.Split('@').Last();
             bool isValid = System.Text.RegularExpressions.Regex.IsMatch(user.Email,

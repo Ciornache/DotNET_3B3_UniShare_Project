@@ -1,4 +1,4 @@
-﻿using Backend.Data;
+﻿﻿using Backend.Data;
 using Backend.Persistence;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
@@ -34,20 +34,14 @@ public class ChangePasswordHandler(
             .OrderByDescending(t => t.CreatedAt)
             .FirstOrDefaultAsync(cancellationToken);
 
-        string resetToken;
-        
-        if (recentToken != null && recentToken.CreatedAt > DateTime.UtcNow.AddMinutes(-10))
+        if (recentToken == null || recentToken.CreatedAt < DateTime.UtcNow.AddMinutes(-10))
         {
-            // Use the stored token if it was created recently (within 10 minutes)
-            resetToken = recentToken.Code;
-            _logger.Information("Using stored password reset token for user {UserId}", dto.UserId);
+            _logger.Warning("No valid password reset token found for user {UserId}", dto.UserId);
+            return Results.BadRequest(new { error = "Password reset token expired or not found. Please request a new password reset." });
         }
-        else
-        {
-            // Generate a new token (for admin password resets or if token expired)
-            resetToken = await userManager.GeneratePasswordResetTokenAsync(user);
-            _logger.Information("Generated new password reset token for user {UserId}", dto.UserId);
-        }
+
+        string resetToken = recentToken.Code;
+        _logger.Information("Using stored password reset token for user {UserId}", dto.UserId);
 
         var result = await userManager.ResetPasswordAsync(user, resetToken, dto.NewPassword);
         
@@ -56,15 +50,24 @@ public class ChangePasswordHandler(
             _logger.Error("Password change failed for {UserId}. Errors: {Errors}", 
                 dto.UserId, 
                 string.Join(", ", result.Errors.Select(e => e.Description)));
-            return Results.BadRequest(new { errors = result.Errors.Select(e => e.Description) });
+
+            // Return validation errors in a format that frontend can use
+            var errors = new Dictionary<string, List<string>>();
+            foreach (var error in result.Errors)
+            {
+                if (!errors.ContainsKey(error.Code))
+                {
+                    errors[error.Code] = new List<string>();
+                }
+                errors[error.Code].Add(error.Description);
+            }
+
+            return Results.BadRequest(errors);
         }
 
-        // Clean up used tokens
-        if (recentToken != null)
-        {
-            context.PasswordResetTokens.Remove(recentToken);
-            await context.SaveChangesAsync(cancellationToken);
-        }
+        // Clean up used token
+        context.PasswordResetTokens.Remove(recentToken);
+        await context.SaveChangesAsync(cancellationToken);
 
         _logger.Information("Password changed successfully for user {UserId}", dto.UserId);
         

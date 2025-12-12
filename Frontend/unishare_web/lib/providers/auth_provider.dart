@@ -40,6 +40,7 @@ class AuthProvider with ChangeNotifier {
 
   // ---------------- LOGIN ----------------
   Future<bool> login(String email, String password) async {
+    _fieldErrors.clear();
     final response = await ApiService.login(email: email, password: password);
 
     if (response != null && response.containsKey('accessToken')) {
@@ -48,7 +49,6 @@ class AuthProvider with ChangeNotifier {
       _currentUserEmail = email;
 
       // decode email verified from token (if present)
-      // Prefer server-provided field if available
       try {
         if (response.containsKey('emailVerified')) {
           final ev = response['emailVerified'];
@@ -69,6 +69,11 @@ class AuthProvider with ChangeNotifier {
       await _saveCredentials();
       notifyListeners();
       return true;
+    } else if (response != null && response.containsKey('error')) {
+      // Set error for password field
+      _fieldErrors['password'] = response['error'];
+      notifyListeners();
+      return false;
     }
     return false;
   }
